@@ -17212,51 +17212,51 @@ sign in chained assignment."
     ;; this is the full string.
     ;; group 1 is the quote type and a closing quote is matched
     ;; group 2 is the string part
-    ("f\\(['\"]\\{1,3\\}\\)\\([^\\1]+?\\)\\1"
-     ;; these are the {keywords}
-     ("{[^}]*?}"
-      ;; Pre-match form
-      (progn (goto-char (match-beginning 0)) (match-end 0))
-      ;; Post-match form
-      (goto-char (match-end 0))
-      ;; face for this match
-      ;; (0 font-lock-variable-name-face t)))
-      (0 mys-variable-name-face t)))
+    ;; ("f\\(['\"]\\{1,3\\}\\)\\([^\\1]+?\\)\\1"
+    ;;  ;; these are the {keywords}
+    ;;  ("{[^}]*?}"
+    ;;   ;; Pre-match form
+    ;;   (progn (goto-char (match-beginning 0)) (match-end 0))
+    ;;   ;; Post-match form
+    ;;   (goto-char (match-end 0))
+    ;;   ;; face for this match
+    ;;   ;; (0 font-lock-variable-name-face t)))
+    ;;   (0 mys-variable-name-face t)))
     ;; assignment
     ;; a, b, c = (1, 2, 3)
     ;; a, *b, c = range(10)
     ;; inst.a, inst.b, inst.c = 'foo', 'bar', 'baz'
     ;; (a, b, *c, d) = x, *y = 5, 6, 7, 8, 9
-    (,(mys-font-lock-assignment-matcher
-       (mys-rx line-start (* space) (? (or "[" "("))
-                  grouped-assignment-target (* space) ?, (* space)
-                  (* assignment-target (* space) ?, (* space))
-                  (? assignment-target (* space))
-                  (? ?, (* space))
-                  (? (or ")" "]") (* space))
-                  (group assignment-operator)))
-     (1 mys-variable-name-face)
-     (,(mys-rx grouped-assignment-target)
-      (progn
-        (goto-char (match-end 1))       ; go back after the first symbol
-        (match-beginning 2))            ; limit the search until the assignment
-      nil
-      (1 mys-variable-name-face)))
-    (
-     ;; "(closure (t) (limit) (let ((re \"\\(?:self\\)*\\([._[:word:]]+\\)[[:space:]]*\\(?:,[[:space:]]*[._[:word:]]+[[:space:]]*\\)*\\(?:%=\\|&=\\|\\*\\(?:\\*?=\\)\\|\\+=\\|-=\\|/\\(?:/?=\\)\\|\\(?:<<\\|>>\\|[|^]\\)=\\|[:=]\\)\") (res nil)) (while (and (setq res (re-search-forward re limit t)) (goto-char (match-end 1)) (nth 1 (parse-partial-sexp (point-min) (point))))) res))"     . (1 mys-variable-name-face nil nil)
-
-     ,(lambda (limit)
-        (let ((re (rx (* "self")(group (+ (any word ?. ?_))) (* space)
-                      (* ?, (* space) (+ (any word ?. ?_)) (* space))
-                      (or ":" "=" "+=" "-=" "*=" "/=" "//=" "%=" "**=" ">>=" "<<=" "&=" "^=" "|=")))
-              (res nil))
-          (while (and (setq res (re-search-forward re limit t))
-                      (goto-char (match-end 1))
-                      (nth 1 (parse-partial-sexp (point-min) (point)))
-                      ;; (mys-syntax-context 'paren)
-        	      ))
-          res))
-     . (1 mys-variable-name-face nil nil))
+    ;; (,(mys-font-lock-assignment-matcher
+    ;;    (mys-rx line-start (* space) (? (or "[" "("))
+    ;;               grouped-assignment-target (* space) ?, (* space)
+    ;;               (* assignment-target (* space) ?, (* space))
+    ;;               (? assignment-target (* space))
+    ;;               (? ?, (* space))
+    ;;               (? (or ")" "]") (* space))
+    ;;               (group assignment-operator)))
+    ;;  (1 mys-variable-name-face)
+    ;;  (,(mys-rx grouped-assignment-target)
+    ;;   (progn
+    ;;     (goto-char (match-end 1))       ; go back after the first symbol
+    ;;     (match-beginning 2))            ; limit the search until the assignment
+    ;;   nil
+    ;;   (1 mys-variable-name-face)))
+    ;; (
+    ;;  ;; "(closure (t) (limit) (let ((re \"\\(?:self\\)*\\([._[:word:]]+\\)[[:space:]]*\\(?:,[[:space:]]*[._[:word:]]+[[:space:]]*\\)*\\(?:%=\\|&=\\|\\*\\(?:\\*?=\\)\\|\\+=\\|-=\\|/\\(?:/?=\\)\\|\\(?:<<\\|>>\\|[|^]\\)=\\|[:=]\\)\") (res nil)) (while (and (setq res (re-search-forward re limit t)) (goto-char (match-end 1)) (nth 1 (parse-partial-sexp (point-min) (point))))) res))"     . (1 mys-variable-name-face nil nil)
+    ;; 
+    ;;  ,(lambda (limit)
+    ;;     (let ((re (rx (* "self")(group (+ (any word ?. ?_))) (* space)
+    ;;                   (* ?, (* space) (+ (any word ?. ?_)) (* space))
+    ;;                   (or ":" "=" "+=" "-=" "*=" "/=" "//=" "%=" "**=" ">>=" "<<=" "&=" "^=" "|=")))
+    ;;           (res nil))
+    ;;       (while (and (setq res (re-search-forward re limit t))
+    ;;                   (goto-char (match-end 1))
+    ;;                   (nth 1 (parse-partial-sexp (point-min) (point)))
+    ;;                   ;; (mys-syntax-context 'paren)
+    ;;     	      ))
+    ;;       res))
+    ;;  . (1 mys-variable-name-face nil nil))
 
 
     ;; Numbers
