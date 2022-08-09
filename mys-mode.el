@@ -1718,7 +1718,8 @@ At any case only current input gets fontified."
   :group 'mys-mode)
 
 (defcustom mys-hide-show-keywords
-  '("class"    "def"    "elif"    "else"    "except"
+  '("class"    "func"    "elif"    "else"    "except"
+    "test" "iterator" "trait" "enum"
     "for"      "if"     "while"   "finally" "try"
     "with"     "match"  "case")
   "Keywords composing visible heads."
@@ -1740,7 +1741,8 @@ At any case only current input gets fontified."
   :group 'mys-mode)
 
 (defcustom mys-outline-mode-keywords
-  '("class"    "def"    "elif"    "else"    "except"
+  '("class"    "func"    "elif"    "else"    "except"
+    "test" "iterator" "trait" "enum"
     "for"      "if"     "while"   "finally" "try"
     "with"     "match"  "case")
   "Keywords composing visible heads."
@@ -2729,13 +2731,13 @@ This variable is set in `mys-execute-region' and used in `mys--jump-to-exception
 
 (defvar mys-class-name-face 'mys-class-name-face)
 
-(defvar mys-def-face 'mys-def-face)
+(defvar mys-func-face 'mys-func-face)
 
 (defvar mys-exception-name-face 'mys-exception-name-face)
 
 (defvar mys-import-from-face 'mys-import-from-face)
 
-(defvar mys-def-class-face 'mys-def-class-face)
+(defvar mys-func-class-face 'mys-func-class-face)
 
 (defvar mys-try-if-face 'mys-try-if-face)
 
@@ -2864,7 +2866,11 @@ See `mys-no-outdent-re-raw' for better readable content")
    "async for"
    "async with"
    "class"
-   "def"
+   "func"
+   "test"
+   "iterator"
+   "trait"
+   "enum"
    "for"
    "if"
    "match"
@@ -2934,15 +2940,15 @@ See `mys-minor-block-re-raw' for better readable content")
 (defconst mys-class-re "[ \t]*\\_<\\(class\\)\\_>[ \n\t]"
   "Matches the beginning of a class definition.")
 
-(defconst mys-def-or-class-re "[ \t]*\\_<\\(async def\\|class\\|def\\)\\_>[ \n\t]+\\([[:alnum:]_]*\\)"
+(defconst mys-func-or-class-re "[ \t]*\\_<\\(async def\\|class\\|def\\)\\_>[ \n\t]+\\([[:alnum:]_]*\\)"
   "Matches the beginning of a class- or functions definition.
 
 Second group grabs the name")
 
-;; (setq mys-def-or-class-re "[ \t]*\\_<\\(async def\\|class\\|def\\)\\_>[ \n\t]")
+;; (setq mys-func-or-class-re "[ \t]*\\_<\\(async def\\|class\\|def\\)\\_>[ \n\t]")
 
-;; (defconst mys-def-re "[ \t]*\\_<\\(async def\\|def\\)\\_>[ \n\t]"
-(defconst mys-def-re "[ \t]*\\_<\\(def\\|async def\\)\\_>[ \n\t]"
+;; (defconst mys-func-re "[ \t]*\\_<\\(async def\\|def\\)\\_>[ \n\t]"
+(defconst mys-func-re "[ \t]*\\_<\\(def\\|async def\\)\\_>[ \n\t]"
   "Matches the beginning of a functions definition.")
 
 (defcustom mys-block-or-clause-re-raw
@@ -2952,7 +2958,11 @@ Second group grabs the name")
    "async def"
    "async class"
    "class"
-   "def"
+   "func"
+   "test"
+   "iterator"
+   "trait"
+   "enum"
    "elif"
    "else"
    "except"
@@ -2983,7 +2993,11 @@ Second group grabs the name")
    "async for"
    "async with"
    "class"
-   "def"
+   "func"
+   "test"
+   "iterator"
+   "trait"
+   "enum"
    "elif"
    "else"
    "except"
@@ -3385,10 +3399,10 @@ commonly \"cls\" and \"self\""
   :tag "mys-import-from-face"
   :group 'mys-mode)
 
-(defface mys-def-class-face
+(defface mys-func-class-face
   '((t (:inherit font-lock-keyword-face)))
   "Highlight keywords."
-  :tag "mys-def-class-face"
+  :tag "mys-func-class-face"
   :group 'mys-mode)
 
  ;; PEP 318 decorators
@@ -3410,7 +3424,7 @@ commonly \"cls\" and \"self\""
   :tag "mys-class-name-face"
   :group 'mys-mode)
 
-(defface mys-def-face
+(defface mys-func-face
   '((t (:inherit font-lock-function-name-face)))
   "Face for classes."
   :tag "mys-class-name-face"
@@ -3794,7 +3808,7 @@ Return and move to match-beginning if successful"
 		  ;; (re-search-backward regexpvalue nil 'move 1)
 		  ;; (re-search-backward (concat "^ \\{0,"(format "%s" indent) "\\}"regexpvalue) nil 'move 1)
 		  (re-search-backward regexpvalue nil 'move 1)
-		  ;; (re-search-backward (concat "^" "def") nil 'move 1)
+		  ;; (re-search-backward (concat "^" "func") nil 'move 1)
 		  ;; re-search-backward not greedy
 		  (not (and (looking-back "async *" (line-beginning-position))
 			    (goto-char (match-beginning 0))))
@@ -3843,7 +3857,7 @@ Return and move to match-beginning if successful"
 			(point))
 		    (point))))))
       (when (and erg (mys-backward-statement))
-	(when (or (bobp) (looking-at mys-def-or-class-re)(looking-at "\\_<__[[:alnum:]_]+__\\_>"))
+	(when (or (bobp) (looking-at mys-func-or-class-re)(looking-at "\\_<__[[:alnum:]_]+__\\_>"))
 	  erg)))))
 
 (defun mys--font-lock-syntactic-face-function (state)
@@ -4170,7 +4184,7 @@ Optional argument END specify end."
 
 (defun mys--escape-doublequotes (start end)
   "Escape doublequotes in region by START END."
-  (let ((end (comys-marker end)))
+  (let ((end (copy-marker end)))
     (save-excursion
       (goto-char start)
       (while (and (not (eobp)) (< 0 (abs (skip-chars-forward "^\"" end))))
@@ -4566,7 +4580,7 @@ Returns position if succesful"
       (setq erg (mys-backward-decorator)))
     (when erg
       (if
-          (re-search-forward mys-def-or-class-re nil t)
+          (re-search-forward mys-func-or-class-re nil t)
           (progn
             (back-to-indentation)
             (skip-chars-backward " \t\r\n\f")
@@ -4817,8 +4831,8 @@ Return and move to match-beginning if successful"
 		     'mys-if-re)
 		    ((looking-at mys-try-re)
 		     'mys-try-re)
-		    ((looking-at mys-def-re)
-		     'mys-def-re)
+		    ((looking-at mys-func-re)
+		     'mys-func-re)
 		    ((looking-at mys-class-re)
 		     'mys-class-re)
 		    (t regexp)))
@@ -4843,7 +4857,7 @@ Optional ENFORCE-REGEXP: search for regexp only."
     (let* ((orig (point))
 	   (indent (or indent 0))
 	   done
-	   (regexpvalue (if (member regexp (list 'mys-def-re 'mys-def-or-class-re 'mys-class-re))
+	   (regexpvalue (if (member regexp (list 'mys-func-re 'mys-func-or-class-re 'mys-class-re))
 			    (concat (symbol-value regexp) "\\|" (symbol-value 'mys-decorator-re))
 			  (symbol-value regexp)))
 	   (lastvalue (and secondvalue
@@ -4865,7 +4879,7 @@ Optional ENFORCE-REGEXP: search for regexp only."
 	       (and secondvalue (looking-at secondvalue))
 	       (and lastvalue (looking-at lastvalue))
 	       (and (looking-at regexpvalue) (setq done t))
-	       ;; mys-forward-def-or-class-test-3JzvVW
+	       ;; mys-forward-func-or-class-test-3JzvVW
 	       ;; (setq done t)
                )))
       (and (< orig (point)) (point))))))
@@ -5347,7 +5361,7 @@ Avoids `recenter' calls until OUTPUT is completely sent."
   (let ((env (append (when (fboundp 'tramp-get-remote-locale)
                        ;; Emacs<24.4 compat.
                        (list (tramp-get-remote-locale vec)))
-		     (comys-sequence env)))
+		     (copy-sequence env)))
         (tramp-end-of-heredoc
          (if (boundp 'tramp-end-of-heredoc)
              tramp-end-of-heredoc
@@ -5389,7 +5403,7 @@ will use the python interpreter from inside the virtualenv when
 starting the shell.  If `default-directory' points to a remote host,
 the returned value appends `mys-shell-remote-exec-path' instead
 of `exec-path'."
-  (let ((new-path (comys-sequence
+  (let ((new-path (copy-sequence
                    (if (file-remote-p default-directory)
                        mys-shell-remote-exec-path
                      exec-path)))
@@ -7063,7 +7077,7 @@ can expand to any number of values."
          (if (listp (cdr form))
              ;; Proper list.  We substitute variables even in the head
              ;; position -- who knows, might be handy one day.
-             (list (mapcan (lambda (x) (comys-sequence
+             (list (mapcan (lambda (x) (copy-sequence
                                         (rx--substitute bindings x)))
                            form))
            ;; Cons pair (presumably an interval).
@@ -7940,8 +7954,8 @@ Optional END: region end"
                          (goto-char
                           (region-end))))
                       (t (line-end-position)))))
-      (setq beg (comys-marker beg))
-      (setq end (comys-marker end))
+      (setq beg (copy-marker beg))
+      (setq end (copy-marker end))
       (if (< 0 count)
           (indent-rigidly beg end mys-indent-offset)
         (indent-rigidly beg end (- mys-indent-offset)))
@@ -7953,7 +7967,7 @@ Optional END: region end"
 (defun mys--shift-forms-base (form arg &optional beg end)
   (let* ((begform (intern-soft (concat "mys-backward-" form)))
          (endform (intern-soft (concat "mys-forward-" form)))
-         (orig (comys-marker (point)))
+         (orig (copy-marker (point)))
          (beg (cond (beg)
                     ((use-region-p)
                      (save-excursion
@@ -8070,7 +8084,7 @@ Return outmost indentation reached."
   (interactive "*P")
   (mys--shift-forms-base "comment" (- (or arg mys-indent-offset))))
 
-(defun mys-shift-def-right (&optional arg)
+(defun mys-shift-func-right (&optional arg)
   "Indent def by COUNT spaces.
 
 COUNT defaults to `mys-indent-offset',
@@ -8078,9 +8092,9 @@ use \[universal-argument] to specify a different value.
 
 Return outmost indentation reached."
   (interactive "*P")
-  (mys--shift-forms-base "def" (or arg mys-indent-offset)))
+  (mys--shift-forms-base "func" (or arg mys-indent-offset)))
 
-(defun mys-shift-def-left (&optional arg)
+(defun mys-shift-func-left (&optional arg)
   "Dedent def by COUNT spaces.
 
 COUNT defaults to `mys-indent-offset',
@@ -8088,9 +8102,9 @@ use \[universal-argument] to specify a different value.
 
 Return outmost indentation reached."
   (interactive "*P")
-  (mys--shift-forms-base "def" (- (or arg mys-indent-offset))))
+  (mys--shift-forms-base "func" (- (or arg mys-indent-offset))))
 
-(defun mys-shift-def-or-class-right (&optional arg)
+(defun mys-shift-func-or-class-right (&optional arg)
   "Indent def-or-class by COUNT spaces.
 
 COUNT defaults to `mys-indent-offset',
@@ -8100,7 +8114,7 @@ Return outmost indentation reached."
   (interactive "*P")
   (mys--shift-forms-base "def-or-class" (or arg mys-indent-offset)))
 
-(defun mys-shift-def-or-class-left (&optional arg)
+(defun mys-shift-func-or-class-left (&optional arg)
   "Dedent def-or-class by COUNT spaces.
 
 COUNT defaults to `mys-indent-offset',
@@ -8266,14 +8280,14 @@ Return position if block-or-clause found, nil otherwise."
 
 Return position if def found, nil otherwise."
   (interactive)
-  (mys-down-base 'mys-def-re indent))
+  (mys-down-base 'mys-func-re indent))
 
-(defun mys-down-def-or-class (&optional indent)
+(defun mys-down-func-or-class (&optional indent)
   "Go to the beginning of next def-or-class downwards according to INDENT.
 
 Return position if def-or-class found, nil otherwise."
   (interactive)
-  (mys-down-base 'mys-def-or-class-re indent))
+  (mys-down-base 'mys-func-or-class-re indent))
 
 (defun mys-down-minor-block (&optional indent)
   "Go to the beginning of next minor-block downwards according to INDENT.
@@ -8322,24 +8336,24 @@ Return position if block-or-clause found, nil otherwise "
   (mys-down-base 'mys-block-or-clause-re indent t)
   (progn (beginning-of-line)(point)))
 
-(defun mys-down-def-bol (&optional indent)
+(defun mys-down-func-bol (&optional indent)
   "Go to the beginning of next def below according to INDENT.
 
 Go to beginning of line
 Optional INDENT: honor indentation
 Return position if def found, nil otherwise "
   (interactive)
-  (mys-down-base 'mys-def-re indent t)
+  (mys-down-base 'mys-func-re indent t)
   (progn (beginning-of-line)(point)))
 
-(defun mys-down-def-or-class-bol (&optional indent)
+(defun mys-down-func-or-class-bol (&optional indent)
   "Go to the beginning of next def-or-class below according to INDENT.
 
 Go to beginning of line
 Optional INDENT: honor indentation
 Return position if def-or-class found, nil otherwise "
   (interactive)
-  (mys-down-base 'mys-def-or-class-re indent t)
+  (mys-down-base 'mys-func-or-class-re indent t)
   (progn (beginning-of-line)(point)))
 
 (defun mys-down-minor-block-bol (&optional indent)
@@ -8362,7 +8376,7 @@ Returns the indentation of FORM-start
 Arg REGEXP, a symbol"
   (unless (eobp)
     (let (;; not looking for an assignment
-	  (use-regexp (member regexp (list 'mys-def-re 'mys-class-re 'mys-def-or-class-re)))
+	  (use-regexp (member regexp (list 'mys-func-re 'mys-class-re 'mys-func-or-class-re)))
 	  (orig (or orig (point))))
       (unless (eobp)
 	(unless (mys-beginning-of-statement-p)
@@ -8385,9 +8399,9 @@ Arg REGEXP, a symbol"
 		 ((and (mys-beginning-of-statement-p)
 		       ;; (eq 0 (current-column))
 		       (or (looking-at regexpvalue)
-			   (and (member regexp (list 'mys-def-re 'mys-def-or-class-re 'mys-class-re))
+			   (and (member regexp (list 'mys-func-re 'mys-func-or-class-re 'mys-class-re))
 				(looking-at mys-decorator-re)
-				(mys-down-def-or-class (current-indentation)))
+				(mys-down-func-or-class (current-indentation)))
 			   (and (member regexp (list 'mys-minor-block-re 'mys-if-re 'mys-for-re 'mys-try-re))
 				(looking-at mys-minor-clause-re))))
 		  (list (current-indentation) (point) (mys--end-base-determine-secondvalue regexp)))
@@ -8485,19 +8499,19 @@ If already at beginning, go one `def' backward.
 Return beginning of form if successful, nil otherwise"
   (interactive)
   (let (erg)
-    (setq erg (car-safe (cdr-safe (mys--go-to-keyword 'mys-def-re))))
+    (setq erg (car-safe (cdr-safe (mys--go-to-keyword 'mys-func-re))))
     (when mys-mark-decorators (and (mys-backward-decorator)
                                                  (setq erg (point))))
     erg))
 
-(defun mys-backward-def-or-class ()
+(defun mys-backward-func-or-class ()
  "Go to beginning of `def-or-class'.
 
 If already at beginning, go one `def-or-class' backward.
 Return beginning of form if successful, nil otherwise"
   (interactive)
   (let (erg)
-    (setq erg (car-safe (cdr-safe (mys--go-to-keyword 'mys-def-or-class-re))))
+    (setq erg (car-safe (cdr-safe (mys--go-to-keyword 'mys-func-or-class-re))))
     (when mys-mark-decorators (and (mys-backward-decorator)
                                                  (setq erg (point))))
     erg))
@@ -8520,7 +8534,7 @@ Return beginning of `class' if successful, nil otherwise"
        (progn (beginning-of-line)(point))))
 
 ;;;###autoload
-(defun mys-backward-def-bol ()
+(defun mys-backward-func-bol ()
   "Go to beginning of `def', go to BOL.
 If already at beginning, go one `def' backward.
 Return beginning of `def' if successful, nil otherwise"
@@ -8529,12 +8543,12 @@ Return beginning of `def' if successful, nil otherwise"
        (progn (beginning-of-line)(point))))
 
 ;;;###autoload
-(defun mys-backward-def-or-class-bol ()
+(defun mys-backward-func-or-class-bol ()
   "Go to beginning of `def-or-class', go to BOL.
 If already at beginning, go one `def-or-class' backward.
 Return beginning of `def-or-class' if successful, nil otherwise"
   (interactive)
-  (and (mys-backward-def-or-class)
+  (and (mys-backward-func-or-class)
        (progn (beginning-of-line)(point))))
 
 (defun mys-backward-assignment ()
@@ -8798,9 +8812,9 @@ Return end of `def' if successful, nil otherwise
 Optional ORIG: start position
 Optional BOL: go to beginning of line following end-position"
   (interactive)
-  (cdr-safe (mys--end-base 'mys-def-re orig bol)))
+  (cdr-safe (mys--end-base 'mys-func-re orig bol)))
 
-(defun mys-forward-def-bol ()
+(defun mys-forward-func-bol ()
   "Goto beginning of line following end of `def'.
 
 Return position reached, if successful, nil otherwise.
@@ -8808,22 +8822,22 @@ See also `mys-down-def'."
   (interactive)
   (mys-forward-def nil t))
 
-(defun mys-forward-def-or-class (&optional orig bol)
+(defun mys-forward-func-or-class (&optional orig bol)
   "Go to end of def-or-class.
 
 Return end of `def-or-class' if successful, nil otherwise
 Optional ORIG: start position
 Optional BOL: go to beginning of line following end-position"
   (interactive)
-  (cdr-safe (mys--end-base 'mys-def-or-class-re orig bol)))
+  (cdr-safe (mys--end-base 'mys-func-or-class-re orig bol)))
 
-(defun mys-forward-def-or-class-bol ()
+(defun mys-forward-func-or-class-bol ()
   "Goto beginning of line following end of `def-or-class'.
 
 Return position reached, if successful, nil otherwise.
-See also `mys-down-def-or-class'."
+See also `mys-down-func-or-class'."
   (interactive)
-  (mys-forward-def-or-class nil t))
+  (mys-forward-func-or-class nil t))
 
 (defun mys-forward-elif-block (&optional orig bol)
   "Go to end of elif-block.
@@ -9020,8 +9034,8 @@ This function does not modify point or mark."
       (cond
        ((eq position 'bol) (beginning-of-line))
        ((eq position 'eol) (end-of-line))
-       ((eq position 'bod) (mys-backward-def-or-class))
-       ((eq position 'eod) (mys-forward-def-or-class))
+       ((eq position 'bod) (mys-backward-func-or-class))
+       ((eq position 'eod) (mys-forward-func-or-class))
        ;; Kind of funny, I know, but useful for mys-up-exception.
        ((eq position 'bob) (goto-char (point-min)))
        ((eq position 'eob) (goto-char (point-max)))
@@ -9057,7 +9071,7 @@ Returns position if successful, nil otherwise"
         (mys-backward-statement))
       (unless (eq 0 (current-column))
         (mys-backward-top-level))
-      (cond ((looking-at mys-def-re)
+      (cond ((looking-at mys-func-re)
              (setq erg (mys-forward-def)))
             ((looking-at mys-class-re)
              (setq erg (mys-forward-class)))
@@ -9266,7 +9280,7 @@ thus remember line of source buffer"
 		;; (re-search-backward (concat mys-imys-input-prompt-re "\\|" mys-imys-output-prompt-re) nil t 1))
 	      (save-excursion
 		(when (re-search-forward "File \"\\(.+\\)\", line \\([0-9]+\\)\\(.*\\)$" nil t)
-		  (setq erg (comys-marker (point)))
+		  (setq erg (copy-marker (point)))
 		  (delete-region (progn (beginning-of-line)
 					(save-match-data
 					  (when (looking-at
@@ -9333,8 +9347,8 @@ Optional EXCEPTION-BUFFER PROC FILE ORIGLINE
 May we get rid of the temporary file?"
   (and (mys--buffer-filename-remote-maybe) buffer-offer-save (buffer-modified-p (mys--buffer-filename-remote-maybe)) (y-or-n-p "Save buffer before executing? ")
        (write-file (mys--buffer-filename-remote-maybe)))
-  (let* ((start (comys-marker start))
-         (end (comys-marker end))
+  (let* ((start (copy-marker start))
+         (end (copy-marker end))
          (exception-buffer (or exception-buffer (current-buffer)))
          (line (mys-count-lines (point-min) (if (eq start (line-beginning-position)) (1+ start) start)))
          (strg (buffer-substring-no-properties start end))
@@ -9608,14 +9622,14 @@ Return position if block-or-clause found, nil otherwise."
 Optional INDENT
 Return position if def found, nil otherwise."
   (interactive)
-  (mys-up-base 'mys-def-re indent))
+  (mys-up-base 'mys-func-re indent))
 
-(defun mys-up-def-or-class (&optional indent)
+(defun mys-up-func-or-class (&optional indent)
   "Go to the beginning of next def-or-class upwards according to INDENT.
 Optional INDENT
 Return position if def-or-class found, nil otherwise."
   (interactive)
-  (mys-up-base 'mys-def-or-class-re indent))
+  (mys-up-base 'mys-func-or-class-re indent))
 
 (defun mys-up-minor-block (&optional indent)
   "Go to the beginning of next minor-block upwards according to INDENT.
@@ -9660,22 +9674,22 @@ Return position if block-or-clause found, nil otherwise."
   (mys-up-base 'mys-block-or-clause-re indent)
   (progn (beginning-of-line)(point)))
 
-(defun mys-up-def-bol (&optional indent)
+(defun mys-up-func-bol (&optional indent)
   "Go to the beginning of next def upwards according to INDENT.
 
 Go to beginning of line.
 Return position if def found, nil otherwise."
   (interactive)
-  (mys-up-base 'mys-def-re indent)
+  (mys-up-base 'mys-func-re indent)
   (progn (beginning-of-line)(point)))
 
-(defun mys-up-def-or-class-bol (&optional indent)
+(defun mys-up-func-or-class-bol (&optional indent)
   "Go to the beginning of next def-or-class upwards according to INDENT.
 
 Go to beginning of line.
 Return position if def-or-class found, nil otherwise."
   (interactive)
-  (mys-up-base 'mys-def-or-class-re indent)
+  (mys-up-base 'mys-func-or-class-re indent)
   (progn (beginning-of-line)(point)))
 
 (defun mys-up-minor-block-bol (&optional indent)
@@ -9796,22 +9810,22 @@ Return position, nil otherwise."
          (eq (current-column)(current-indentation))
          (point))))
 
-(defun mys--beginning-of-def-p (&optional pps)
+(defun mys--beginning-of-func-p (&optional pps)
   "If cursor is at the beginning of a `def'.
 Return position, nil otherwise."
   (let ((pps (or pps (parse-partial-sexp (point-min) (point)))))
     (and (not (or (nth 8 pps)(nth 1 pps)))
-         (looking-at mys-def-re)
+         (looking-at mys-func-re)
          (looking-back "[^ \t]*" (line-beginning-position))
          (eq (current-column)(current-indentation))
          (point))))
 
-(defun mys--beginning-of-def-or-class-p (&optional pps)
+(defun mys--beginning-of-func-or-class-p (&optional pps)
   "If cursor is at the beginning of a `def-or-class'.
 Return position, nil otherwise."
   (let ((pps (or pps (parse-partial-sexp (point-min) (point)))))
     (and (not (or (nth 8 pps)(nth 1 pps)))
-         (looking-at mys-def-or-class-re)
+         (looking-at mys-func-or-class-re)
          (looking-back "[^ \t]*" (line-beginning-position))
          (eq (current-column)(current-indentation))
          (point))))
@@ -9946,23 +9960,23 @@ Return position, nil otherwise."
          (looking-back "[^ \t]*" (line-beginning-position))
          (point))))
 
-(defun mys--beginning-of-def-bol-p (&optional pps)
+(defun mys--beginning-of-func-bol-p (&optional pps)
   "If cursor is at the beginning of a `def'.
 Return position, nil otherwise."
   (let ((pps (or pps (parse-partial-sexp (point-min) (point)))))
     (and (bolp)
          (not (or (nth 8 pps)(nth 1 pps)))
-         (looking-at mys-def-re)
+         (looking-at mys-func-re)
          (looking-back "[^ \t]*" (line-beginning-position))
          (point))))
 
-(defun mys--beginning-of-def-or-class-bol-p (&optional pps)
+(defun mys--beginning-of-func-or-class-bol-p (&optional pps)
   "If cursor is at the beginning of a `def-or-class'.
 Return position, nil otherwise."
   (let ((pps (or pps (parse-partial-sexp (point-min) (point)))))
     (and (bolp)
          (not (or (nth 8 pps)(nth 1 pps)))
-         (looking-at mys-def-or-class-re)
+         (looking-at mys-func-or-class-re)
          (looking-back "[^ \t]*" (line-beginning-position))
          (point))))
 
@@ -10503,7 +10517,7 @@ Return position of successful, nil of not started from inside."
   (cond
    ((mys--beginning-of-class-p)
 	 (mys-up-class (current-indentation)))
-   ((mys--beginning-of-def-p)
+   ((mys--beginning-of-func-p)
 	 (mys-up-def (current-indentation)))
    ((mys--beginning-of-block-p)
 	 (mys-up-block (current-indentation)))
@@ -10540,13 +10554,13 @@ Return position of successful, nil of not started from inside."
   "Return end of comment position."
   (save-excursion (mys-forward-comment)))
 
-(defun mys--end-of-def-position ()
+(defun mys--end-of-func-position ()
   "Return end of def position."
   (save-excursion (mys-forward-def)))
 
-(defun mys--end-of-def-or-class-position ()
+(defun mys--end-of-func-or-class-position ()
   "Return end of def-or-class position."
-  (save-excursion (mys-forward-def-or-class)))
+  (save-excursion (mys-forward-func-or-class)))
 
 (defun mys--end-of-expression-position ()
   "Return end of expression position."
@@ -10612,13 +10626,13 @@ Return position of successful, nil of not started from inside."
   "Return end of clause position at `beginning-of-line'."
   (save-excursion (mys-forward-clause-bol)))
 
-(defun mys--end-of-def-position-bol ()
+(defun mys--end-of-func-position-bol ()
   "Return end of def position at `beginning-of-line'."
-  (save-excursion (mys-forward-def-bol)))
+  (save-excursion (mys-forward-func-bol)))
 
-(defun mys--end-of-def-or-class-position-bol ()
+(defun mys--end-of-func-or-class-position-bol ()
   "Return end of def-or-class position at `beginning-of-line'."
-  (save-excursion (mys-forward-def-or-class-bol)))
+  (save-excursion (mys-forward-func-or-class-bol)))
 
 (defun mys--end-of-elif-block-position-bol ()
   "Return end of elif-block position at `beginning-of-line'."
@@ -10689,17 +10703,17 @@ Return position of successful, nil of not started from inside."
     (or (mys--beginning-of-comment-p)
         (mys-backward-comment))))
 
-(defun mys--beginning-of-def-position ()
+(defun mys--beginning-of-func-position ()
   "Return beginning of def position."
   (save-excursion
-    (or (mys--beginning-of-def-p)
+    (or (mys--beginning-of-func-p)
         (mys-backward-def))))
 
-(defun mys--beginning-of-def-or-class-position ()
+(defun mys--beginning-of-func-or-class-position ()
   "Return beginning of def-or-class position."
   (save-excursion
-    (or (mys--beginning-of-def-or-class-p)
-        (mys-backward-def-or-class))))
+    (or (mys--beginning-of-func-or-class-p)
+        (mys-backward-func-or-class))))
 
 (defun mys--beginning-of-expression-position ()
   "Return beginning of expression position."
@@ -10797,17 +10811,17 @@ Return position of successful, nil of not started from inside."
     (or (mys--beginning-of-clause-bol-p)
         (mys-backward-clause-bol))))
 
-(defun mys--beginning-of-def-position-bol ()
+(defun mys--beginning-of-func-position-bol ()
   "Return beginning of def position at `beginning-of-line'."
   (save-excursion
-    (or (mys--beginning-of-def-bol-p)
-        (mys-backward-def-bol))))
+    (or (mys--beginning-of-func-bol-p)
+        (mys-backward-func-bol))))
 
-(defun mys--beginning-of-def-or-class-position-bol ()
+(defun mys--beginning-of-func-or-class-position-bol ()
   "Return beginning of def-or-class position at `beginning-of-line'."
   (save-excursion
-    (or (mys--beginning-of-def-or-class-bol-p)
-        (mys-backward-def-or-class-bol))))
+    (or (mys--beginning-of-func-or-class-bol-p)
+        (mys-backward-func-or-class-bol))))
 
 (defun mys--beginning-of-elif-block-position-bol ()
   "Return beginning of elif-block position at `beginning-of-line'."
@@ -11499,43 +11513,43 @@ For `default' see value of `mys-shell-name'"
   (let ((wholebuf nil))
     (mys--execute-prepare 'clause shell t switch nil nil nil fast proc wholebuf split)))
 
-(defun mys-execute-def-imys (&optional dedicated fast split switch proc)
+(defun mys-execute-func-imys (&optional dedicated fast split switch proc)
   "Send def at point to a python3 interpreter."
   (interactive)
   (let ((wholebuf nil))
     (mys--execute-prepare 'def 'imys dedicated switch nil nil nil fast proc wholebuf split)))
 
-(defun mys-execute-def-imys-dedicated (&optional fast split switch proc)
+(defun mys-execute-func-imys-dedicated (&optional fast split switch proc)
   "Send def at point to a python3 unique interpreter."
   (interactive)
   (let ((wholebuf nil))
     (mys--execute-prepare 'def 'imys t switch nil nil nil fast proc wholebuf split)))
 
-(defun mys-execute-def-imys3 (&optional dedicated fast split switch proc)
+(defun mys-execute-func-imys3 (&optional dedicated fast split switch proc)
   "Send def at point to a python3 interpreter."
   (interactive)
   (let ((wholebuf nil))
     (mys--execute-prepare 'def 'imys3 dedicated switch nil nil nil fast proc wholebuf split)))
 
-(defun mys-execute-def-imys3-dedicated (&optional fast split switch proc)
+(defun mys-execute-func-imys3-dedicated (&optional fast split switch proc)
   "Send def at point to a python3 unique interpreter."
   (interactive)
   (let ((wholebuf nil))
     (mys--execute-prepare 'def 'imys3 t switch nil nil nil fast proc wholebuf split)))
 
-(defun mys-execute-def-jython (&optional dedicated fast split switch proc)
+(defun mys-execute-func-jython (&optional dedicated fast split switch proc)
   "Send def at point to a python3 interpreter."
   (interactive)
   (let ((wholebuf nil))
     (mys--execute-prepare 'def 'jython dedicated switch nil nil nil fast proc wholebuf split)))
 
-(defun mys-execute-def-jython-dedicated (&optional fast split switch proc)
+(defun mys-execute-func-jython-dedicated (&optional fast split switch proc)
   "Send def at point to a python3 unique interpreter."
   (interactive)
   (let ((wholebuf nil))
     (mys--execute-prepare 'def 'jython t switch nil nil nil fast proc wholebuf split)))
 
-(defun mys-execute-def-python (&optional dedicated fast split switch proc)
+(defun mys-execute-func-python (&optional dedicated fast split switch proc)
   "Send def at point to a python3 interpreter.
 
 For `default' see value of `mys-shell-name'"
@@ -11543,7 +11557,7 @@ For `default' see value of `mys-shell-name'"
   (let ((wholebuf nil))
     (mys--execute-prepare 'def 'python dedicated switch nil nil nil fast proc wholebuf split)))
 
-(defun mys-execute-def-mys-dedicated (&optional fast split switch proc)
+(defun mys-execute-func-mys-dedicated (&optional fast split switch proc)
   "Send def at point to a python3 unique interpreter.
 
 For `default' see value of `mys-shell-name'"
@@ -11551,37 +11565,37 @@ For `default' see value of `mys-shell-name'"
   (let ((wholebuf nil))
     (mys--execute-prepare 'def 'python t switch nil nil nil fast proc wholebuf split)))
 
-(defun mys-execute-def-python2 (&optional dedicated fast split switch proc)
+(defun mys-execute-func-python2 (&optional dedicated fast split switch proc)
   "Send def at point to a python3 interpreter."
   (interactive)
   (let ((wholebuf nil))
     (mys--execute-prepare 'def 'python2 dedicated switch nil nil nil fast proc wholebuf split)))
 
-(defun mys-execute-def-python2-dedicated (&optional fast split switch proc)
+(defun mys-execute-func-python2-dedicated (&optional fast split switch proc)
   "Send def at point to a python3 unique interpreter."
   (interactive)
   (let ((wholebuf nil))
     (mys--execute-prepare 'def 'python2 t switch nil nil nil fast proc wholebuf split)))
 
-(defun mys-execute-def-python3 (&optional dedicated fast split switch proc)
+(defun mys-execute-func-python3 (&optional dedicated fast split switch proc)
   "Send def at point to a python3 interpreter."
   (interactive)
   (let ((wholebuf nil))
     (mys--execute-prepare 'def 'python3 dedicated switch nil nil nil fast proc wholebuf split)))
 
-(defun mys-execute-def-python3-dedicated (&optional fast split switch proc)
+(defun mys-execute-func-python3-dedicated (&optional fast split switch proc)
   "Send def at point to a python3 unique interpreter."
   (interactive)
   (let ((wholebuf nil))
     (mys--execute-prepare 'def 'python3 t switch nil nil nil fast proc wholebuf split)))
 
-(defun mys-execute-def-pypy (&optional dedicated fast split switch proc)
+(defun mys-execute-func-pypy (&optional dedicated fast split switch proc)
   "Send def at point to a python3 interpreter."
   (interactive)
   (let ((wholebuf nil))
     (mys--execute-prepare 'def 'pypy dedicated switch nil nil nil fast proc wholebuf split)))
 
-(defun mys-execute-def-pymys-dedicated (&optional fast split switch proc)
+(defun mys-execute-func-pymys-dedicated (&optional fast split switch proc)
   "Send def at point to a python3 unique interpreter."
   (interactive)
   (let ((wholebuf nil))
@@ -11593,49 +11607,49 @@ For `default' see value of `mys-shell-name'"
   (let ((wholebuf nil))
     (mys--execute-prepare 'def shell dedicated switch nil nil nil fast proc wholebuf split)))
 
-(defun mys-execute-def-dedicated (&optional shell fast split switch proc)
+(defun mys-execute-func-dedicated (&optional shell fast split switch proc)
   "Send def at point to a python3 unique interpreter."
   (interactive)
   (let ((wholebuf nil))
     (mys--execute-prepare 'def shell t switch nil nil nil fast proc wholebuf split)))
 
-(defun mys-execute-def-or-class-imys (&optional dedicated fast split switch proc)
+(defun mys-execute-func-or-class-imys (&optional dedicated fast split switch proc)
   "Send def-or-class at point to a python3 interpreter."
   (interactive)
   (let ((wholebuf nil))
     (mys--execute-prepare 'def-or-class 'imys dedicated switch nil nil nil fast proc wholebuf split)))
 
-(defun mys-execute-def-or-class-imys-dedicated (&optional fast split switch proc)
+(defun mys-execute-func-or-class-imys-dedicated (&optional fast split switch proc)
   "Send def-or-class at point to a python3 unique interpreter."
   (interactive)
   (let ((wholebuf nil))
     (mys--execute-prepare 'def-or-class 'imys t switch nil nil nil fast proc wholebuf split)))
 
-(defun mys-execute-def-or-class-imys3 (&optional dedicated fast split switch proc)
+(defun mys-execute-func-or-class-imys3 (&optional dedicated fast split switch proc)
   "Send def-or-class at point to a python3 interpreter."
   (interactive)
   (let ((wholebuf nil))
     (mys--execute-prepare 'def-or-class 'imys3 dedicated switch nil nil nil fast proc wholebuf split)))
 
-(defun mys-execute-def-or-class-imys3-dedicated (&optional fast split switch proc)
+(defun mys-execute-func-or-class-imys3-dedicated (&optional fast split switch proc)
   "Send def-or-class at point to a python3 unique interpreter."
   (interactive)
   (let ((wholebuf nil))
     (mys--execute-prepare 'def-or-class 'imys3 t switch nil nil nil fast proc wholebuf split)))
 
-(defun mys-execute-def-or-class-jython (&optional dedicated fast split switch proc)
+(defun mys-execute-func-or-class-jython (&optional dedicated fast split switch proc)
   "Send def-or-class at point to a python3 interpreter."
   (interactive)
   (let ((wholebuf nil))
     (mys--execute-prepare 'def-or-class 'jython dedicated switch nil nil nil fast proc wholebuf split)))
 
-(defun mys-execute-def-or-class-jython-dedicated (&optional fast split switch proc)
+(defun mys-execute-func-or-class-jython-dedicated (&optional fast split switch proc)
   "Send def-or-class at point to a python3 unique interpreter."
   (interactive)
   (let ((wholebuf nil))
     (mys--execute-prepare 'def-or-class 'jython t switch nil nil nil fast proc wholebuf split)))
 
-(defun mys-execute-def-or-class-python (&optional dedicated fast split switch proc)
+(defun mys-execute-func-or-class-python (&optional dedicated fast split switch proc)
   "Send def-or-class at point to a python3 interpreter.
 
 For `default' see value of `mys-shell-name'"
@@ -11643,7 +11657,7 @@ For `default' see value of `mys-shell-name'"
   (let ((wholebuf nil))
     (mys--execute-prepare 'def-or-class 'python dedicated switch nil nil nil fast proc wholebuf split)))
 
-(defun mys-execute-def-or-class-mys-dedicated (&optional fast split switch proc)
+(defun mys-execute-func-or-class-mys-dedicated (&optional fast split switch proc)
   "Send def-or-class at point to a python3 unique interpreter.
 
 For `default' see value of `mys-shell-name'"
@@ -11651,49 +11665,49 @@ For `default' see value of `mys-shell-name'"
   (let ((wholebuf nil))
     (mys--execute-prepare 'def-or-class 'python t switch nil nil nil fast proc wholebuf split)))
 
-(defun mys-execute-def-or-class-python2 (&optional dedicated fast split switch proc)
+(defun mys-execute-func-or-class-python2 (&optional dedicated fast split switch proc)
   "Send def-or-class at point to a python3 interpreter."
   (interactive)
   (let ((wholebuf nil))
     (mys--execute-prepare 'def-or-class 'python2 dedicated switch nil nil nil fast proc wholebuf split)))
 
-(defun mys-execute-def-or-class-python2-dedicated (&optional fast split switch proc)
+(defun mys-execute-func-or-class-python2-dedicated (&optional fast split switch proc)
   "Send def-or-class at point to a python3 unique interpreter."
   (interactive)
   (let ((wholebuf nil))
     (mys--execute-prepare 'def-or-class 'python2 t switch nil nil nil fast proc wholebuf split)))
 
-(defun mys-execute-def-or-class-python3 (&optional dedicated fast split switch proc)
+(defun mys-execute-func-or-class-python3 (&optional dedicated fast split switch proc)
   "Send def-or-class at point to a python3 interpreter."
   (interactive)
   (let ((wholebuf nil))
     (mys--execute-prepare 'def-or-class 'python3 dedicated switch nil nil nil fast proc wholebuf split)))
 
-(defun mys-execute-def-or-class-python3-dedicated (&optional fast split switch proc)
+(defun mys-execute-func-or-class-python3-dedicated (&optional fast split switch proc)
   "Send def-or-class at point to a python3 unique interpreter."
   (interactive)
   (let ((wholebuf nil))
     (mys--execute-prepare 'def-or-class 'python3 t switch nil nil nil fast proc wholebuf split)))
 
-(defun mys-execute-def-or-class-pypy (&optional dedicated fast split switch proc)
+(defun mys-execute-func-or-class-pypy (&optional dedicated fast split switch proc)
   "Send def-or-class at point to a python3 interpreter."
   (interactive)
   (let ((wholebuf nil))
     (mys--execute-prepare 'def-or-class 'pypy dedicated switch nil nil nil fast proc wholebuf split)))
 
-(defun mys-execute-def-or-class-pymys-dedicated (&optional fast split switch proc)
+(defun mys-execute-func-or-class-pymys-dedicated (&optional fast split switch proc)
   "Send def-or-class at point to a python3 unique interpreter."
   (interactive)
   (let ((wholebuf nil))
     (mys--execute-prepare 'def-or-class 'pypy t switch nil nil nil fast proc wholebuf split)))
 
-(defun mys-execute-def-or-class (&optional shell dedicated fast split switch proc)
+(defun mys-execute-func-or-class (&optional shell dedicated fast split switch proc)
   "Send def-or-class at point to a python3 interpreter."
   (interactive)
   (let ((wholebuf nil))
     (mys--execute-prepare 'def-or-class shell dedicated switch nil nil nil fast proc wholebuf split)))
 
-(defun mys-execute-def-or-class-dedicated (&optional shell fast split switch proc)
+(defun mys-execute-func-or-class-dedicated (&optional shell fast split switch proc)
   "Send def-or-class at point to a python3 unique interpreter."
   (interactive)
   (let ((wholebuf nil))
@@ -13132,7 +13146,7 @@ LIEP stores line-end-position at point-of-interest
       (widen)
       ;; in shell, narrow from previous prompt
       ;; needed by closing
-      (let* ((orig (or orig (comys-marker (point))))
+      (let* ((orig (or orig (copy-marker (point))))
              (origline (or origline (mys-count-lines (point-min) (point))))
              ;; closing indicates: when started, looked
              ;; at a single closing parenthesis
@@ -13200,7 +13214,7 @@ LIEP stores line-end-position at point-of-interest
 			    (progn
 			      (skip-chars-backward " \t\r\n\f")
 			      (back-to-indentation)
-			      (if (looking-at mys-def-or-class-re)
+			      (if (looking-at mys-func-or-class-re)
 				  (+ (current-column) mys-indent-offset)
 				(current-indentation)))
 			  (skip-chars-backward " \t\r\n\f")
@@ -13533,15 +13547,15 @@ For stricter sense specify regexp. "
 Return `t', nil otherwise. "
   (mys--statement-opens-base mys-class-re))
 
-(defun mys--statement-opens-def-p ()
+(defun mys--statement-opens-func-p ()
   "If the statement opens a functions or class.
 Return `t', nil otherwise. "
-  (mys--statement-opens-base mys-def-re))
+  (mys--statement-opens-base mys-func-re))
 
-(defun mys--statement-opens-def-or-class-p ()
+(defun mys--statement-opens-func-or-class-p ()
   "If the statement opens a functions or class definition.
 Return `t', nil otherwise. "
-  (mys--statement-opens-base mys-def-or-class-re))
+  (mys--statement-opens-base mys-func-or-class-re))
 
 (defun mys--down-top-level (&optional regexp)
   "Go to the end of a top-level form.
@@ -13618,7 +13632,7 @@ See customizable variables `mys-current-defun-show' and `mys-current-defun-delay
   (save-restriction
     (widen)
     (save-excursion
-      (let ((erg (when (mys-backward-def-or-class)
+      (let ((erg (when (mys-backward-func-or-class)
                    (forward-word 1)
                    (skip-chars-forward " \t")
                    (prin1-to-string (symbol-at-point)))))
@@ -13762,7 +13776,7 @@ Eval resulting buffer to install it, see customizable `mys-extensions'. "
 	(dotimes (_ 3) (when (not (markerp (process-mark process)))(sit-for 1 t)))
 	(process-mark process)))))
 
-(defun mys-which-def-or-class (&optional orig)
+(defun mys-which-func-or-class (&optional orig)
   "Returns concatenated `def' and `class' names.
 
 In hierarchical order, if cursor is inside.
@@ -13772,8 +13786,8 @@ Used by variable `which-func-functions' "
   (interactive)
   (let* ((orig (or orig (point)))
          (backindent 99999)
-         (re mys-def-or-class-re
-          ;; (concat mys-def-or-class-re "\\([[:alnum:]_]+\\)")
+         (re mys-func-or-class-re
+          ;; (concat mys-func-or-class-re "\\([[:alnum:]_]+\\)")
           )
          erg forward indent backward limit)
     (if
@@ -13793,7 +13807,7 @@ Used by variable `which-func-functions' "
           (setq indent (current-indentation)))
       (goto-char orig)
       (while (and
-              (re-search-backward mys-def-or-class-re limit t 1)
+              (re-search-backward mys-func-or-class-re limit t 1)
               (< (current-indentation) backindent)
               (setq backindent (current-indentation))
               (setq backward (point))
@@ -13808,7 +13822,7 @@ Used by variable `which-func-functions' "
     (if erg
         (progn
           (end-of-line)
-          (while (and (re-search-forward mys-def-or-class-re nil t 1)
+          (while (and (re-search-forward mys-func-or-class-re nil t 1)
                       (<= (point) orig)
                       (< indent (current-indentation))
                       (or
@@ -13821,7 +13835,7 @@ Used by variable `which-func-functions' "
                   (back-to-indentation)
                   (and (looking-at re)
                        (setq erg (list (car erg) (match-string-no-properties 2)))
-                       ;; (< (mys-forward-def-or-class) orig)
+                       ;; (< (mys-forward-func-or-class) orig)
                        ;; if match was beyond definition, nil
                        ;; (setq erg nil)
 )))
@@ -14084,7 +14098,7 @@ If no further element at same level, go one level up."
 Use current region unless optional args BEG END are delivered."
   (interactive "*")
   (let ((beg (or beg (region-beginning)))
-        (end (or (and end (comys-marker end)) (comys-marker (region-end)))))
+        (end (or (and end (copy-marker end)) (copy-marker (region-end)))))
     (save-excursion
       (goto-char beg)
       (unless (mys-empty-line-p) (split-line))
@@ -14213,7 +14227,7 @@ Optional NO-CHECK: used by tests
 "
   (interactive "*")
   (or no-check (use-region-p) (error "Don't see an active region"))
-  (let ((end (comys-marker (or end (region-end)))))
+  (let ((end (copy-marker (or end (region-end)))))
     (goto-char (or beg (region-beginning)))
     (beginning-of-line)
     (setq beg (point))
@@ -14279,296 +14293,296 @@ Returns imports"
           (kill-buffer (current-buffer)))
       (message "Can't see a buffer %s" buffer))))
 
-;; mys-components-comys-forms
+;; mys-components-copy-forms
 
 
-(defun mys-comys-block ()
+(defun mys-copy-block ()
   "Copy block at point.
 
 Store data in kill ring, so it might yanked back."
   (interactive "*")
   (save-excursion
     (let ((erg (mys--mark-base-bol "block")))
-      (comys-region-as-kill (car erg) (cdr erg)))))
+      (copy-region-as-kill (car erg) (cdr erg)))))
 
-(defun mys-comys-block-or-clause ()
+(defun mys-copy-block-or-clause ()
   "Copy block-or-clause at point.
 
 Store data in kill ring, so it might yanked back."
   (interactive "*")
   (save-excursion
     (let ((erg (mys--mark-base-bol "block-or-clause")))
-      (comys-region-as-kill (car erg) (cdr erg)))))
+      (copy-region-as-kill (car erg) (cdr erg)))))
 
-(defun mys-comys-buffer ()
+(defun mys-copy-buffer ()
   "Copy buffer at point.
 
 Store data in kill ring, so it might yanked back."
   (interactive "*")
   (save-excursion
     (let ((erg (mys--mark-base-bol "buffer")))
-      (comys-region-as-kill (car erg) (cdr erg)))))
+      (copy-region-as-kill (car erg) (cdr erg)))))
 
-(defun mys-comys-class ()
+(defun mys-copy-class ()
   "Copy class at point.
 
 Store data in kill ring, so it might yanked back."
   (interactive "*")
   (save-excursion
     (let ((erg (mys--mark-base-bol "class")))
-      (comys-region-as-kill (car erg) (cdr erg)))))
+      (copy-region-as-kill (car erg) (cdr erg)))))
 
-(defun mys-comys-clause ()
+(defun mys-copy-clause ()
   "Copy clause at point.
 
 Store data in kill ring, so it might yanked back."
   (interactive "*")
   (save-excursion
     (let ((erg (mys--mark-base-bol "clause")))
-      (comys-region-as-kill (car erg) (cdr erg)))))
+      (copy-region-as-kill (car erg) (cdr erg)))))
 
-(defun mys-comys-def ()
+(defun mys-copy-def ()
   "Copy def at point.
 
 Store data in kill ring, so it might yanked back."
   (interactive "*")
   (save-excursion
-    (let ((erg (mys--mark-base-bol "def")))
-      (comys-region-as-kill (car erg) (cdr erg)))))
+    (let ((erg (mys--mark-base-bol "func")))
+      (copy-region-as-kill (car erg) (cdr erg)))))
 
-(defun mys-comys-def-or-class ()
+(defun mys-copy-func-or-class ()
   "Copy def-or-class at point.
 
 Store data in kill ring, so it might yanked back."
   (interactive "*")
   (save-excursion
     (let ((erg (mys--mark-base-bol "def-or-class")))
-      (comys-region-as-kill (car erg) (cdr erg)))))
+      (copy-region-as-kill (car erg) (cdr erg)))))
 
-(defun mys-comys-expression ()
+(defun mys-copy-expression ()
   "Copy expression at point.
 
 Store data in kill ring, so it might yanked back."
   (interactive "*")
   (save-excursion
     (let ((erg (mys--mark-base-bol "expression")))
-      (comys-region-as-kill (car erg) (cdr erg)))))
+      (copy-region-as-kill (car erg) (cdr erg)))))
 
-(defun mys-comys-indent ()
+(defun mys-copy-indent ()
   "Copy indent at point.
 
 Store data in kill ring, so it might yanked back."
   (interactive "*")
   (save-excursion
     (let ((erg (mys--mark-base-bol "indent")))
-      (comys-region-as-kill (car erg) (cdr erg)))))
+      (copy-region-as-kill (car erg) (cdr erg)))))
 
-(defun mys-comys-line ()
+(defun mys-copy-line ()
   "Copy line at point.
 
 Store data in kill ring, so it might yanked back."
   (interactive "*")
   (save-excursion
     (let ((erg (mys--mark-base-bol "line")))
-      (comys-region-as-kill (car erg) (cdr erg)))))
+      (copy-region-as-kill (car erg) (cdr erg)))))
 
-(defun mys-comys-minor-block ()
+(defun mys-copy-minor-block ()
   "Copy minor-block at point.
 
 Store data in kill ring, so it might yanked back."
   (interactive "*")
   (save-excursion
     (let ((erg (mys--mark-base-bol "minor-block")))
-      (comys-region-as-kill (car erg) (cdr erg)))))
+      (copy-region-as-kill (car erg) (cdr erg)))))
 
-(defun mys-comys-paragraph ()
+(defun mys-copy-paragraph ()
   "Copy paragraph at point.
 
 Store data in kill ring, so it might yanked back."
   (interactive "*")
   (save-excursion
     (let ((erg (mys--mark-base-bol "paragraph")))
-      (comys-region-as-kill (car erg) (cdr erg)))))
+      (copy-region-as-kill (car erg) (cdr erg)))))
 
-(defun mys-comys-partial-expression ()
+(defun mys-copy-partial-expression ()
   "Copy partial-expression at point.
 
 Store data in kill ring, so it might yanked back."
   (interactive "*")
   (save-excursion
     (let ((erg (mys--mark-base-bol "partial-expression")))
-      (comys-region-as-kill (car erg) (cdr erg)))))
+      (copy-region-as-kill (car erg) (cdr erg)))))
 
-(defun mys-comys-region ()
+(defun mys-copy-region ()
   "Copy region at point.
 
 Store data in kill ring, so it might yanked back."
   (interactive "*")
   (save-excursion
     (let ((erg (mys--mark-base-bol "region")))
-      (comys-region-as-kill (car erg) (cdr erg)))))
+      (copy-region-as-kill (car erg) (cdr erg)))))
 
-(defun mys-comys-statement ()
+(defun mys-copy-statement ()
   "Copy statement at point.
 
 Store data in kill ring, so it might yanked back."
   (interactive "*")
   (save-excursion
     (let ((erg (mys--mark-base-bol "statement")))
-      (comys-region-as-kill (car erg) (cdr erg)))))
+      (copy-region-as-kill (car erg) (cdr erg)))))
 
-(defun mys-comys-top-level ()
+(defun mys-copy-top-level ()
   "Copy top-level at point.
 
 Store data in kill ring, so it might yanked back."
   (interactive "*")
   (save-excursion
     (let ((erg (mys--mark-base-bol "top-level")))
-      (comys-region-as-kill (car erg) (cdr erg)))))
+      (copy-region-as-kill (car erg) (cdr erg)))))
 
-(defun mys-comys-block-bol ()
+(defun mys-copy-block-bol ()
   "Delete block bol at point.
 
 Stores data in kill ring. Might be yanked back using `C-y'."
   (interactive "*")
   (save-excursion
     (let ((erg (mys--mark-base-bol "block")))
-      (comys-region-as-kill (car erg) (cdr erg)))))
+      (copy-region-as-kill (car erg) (cdr erg)))))
 
-(defun mys-comys-block-or-clause-bol ()
+(defun mys-copy-block-or-clause-bol ()
   "Delete block-or-clause bol at point.
 
 Stores data in kill ring. Might be yanked back using `C-y'."
   (interactive "*")
   (save-excursion
     (let ((erg (mys--mark-base-bol "block-or-clause")))
-      (comys-region-as-kill (car erg) (cdr erg)))))
+      (copy-region-as-kill (car erg) (cdr erg)))))
 
-(defun mys-comys-buffer-bol ()
+(defun mys-copy-buffer-bol ()
   "Delete buffer bol at point.
 
 Stores data in kill ring. Might be yanked back using `C-y'."
   (interactive "*")
   (save-excursion
     (let ((erg (mys--mark-base-bol "buffer")))
-      (comys-region-as-kill (car erg) (cdr erg)))))
+      (copy-region-as-kill (car erg) (cdr erg)))))
 
-(defun mys-comys-class-bol ()
+(defun mys-copy-class-bol ()
   "Delete class bol at point.
 
 Stores data in kill ring. Might be yanked back using `C-y'."
   (interactive "*")
   (save-excursion
     (let ((erg (mys--mark-base-bol "class")))
-      (comys-region-as-kill (car erg) (cdr erg)))))
+      (copy-region-as-kill (car erg) (cdr erg)))))
 
-(defun mys-comys-clause-bol ()
+(defun mys-copy-clause-bol ()
   "Delete clause bol at point.
 
 Stores data in kill ring. Might be yanked back using `C-y'."
   (interactive "*")
   (save-excursion
     (let ((erg (mys--mark-base-bol "clause")))
-      (comys-region-as-kill (car erg) (cdr erg)))))
+      (copy-region-as-kill (car erg) (cdr erg)))))
 
-(defun mys-comys-def-bol ()
+(defun mys-copy-func-bol ()
   "Delete def bol at point.
 
 Stores data in kill ring. Might be yanked back using `C-y'."
   (interactive "*")
   (save-excursion
-    (let ((erg (mys--mark-base-bol "def")))
-      (comys-region-as-kill (car erg) (cdr erg)))))
+    (let ((erg (mys--mark-base-bol "func")))
+      (copy-region-as-kill (car erg) (cdr erg)))))
 
-(defun mys-comys-def-or-class-bol ()
+(defun mys-copy-func-or-class-bol ()
   "Delete def-or-class bol at point.
 
 Stores data in kill ring. Might be yanked back using `C-y'."
   (interactive "*")
   (save-excursion
     (let ((erg (mys--mark-base-bol "def-or-class")))
-      (comys-region-as-kill (car erg) (cdr erg)))))
+      (copy-region-as-kill (car erg) (cdr erg)))))
 
-(defun mys-comys-expression-bol ()
+(defun mys-copy-expression-bol ()
   "Delete expression bol at point.
 
 Stores data in kill ring. Might be yanked back using `C-y'."
   (interactive "*")
   (save-excursion
     (let ((erg (mys--mark-base-bol "expression")))
-      (comys-region-as-kill (car erg) (cdr erg)))))
+      (copy-region-as-kill (car erg) (cdr erg)))))
 
-(defun mys-comys-indent-bol ()
+(defun mys-copy-indent-bol ()
   "Delete indent bol at point.
 
 Stores data in kill ring. Might be yanked back using `C-y'."
   (interactive "*")
   (save-excursion
     (let ((erg (mys--mark-base-bol "indent")))
-      (comys-region-as-kill (car erg) (cdr erg)))))
+      (copy-region-as-kill (car erg) (cdr erg)))))
 
-(defun mys-comys-line-bol ()
+(defun mys-copy-line-bol ()
   "Delete line bol at point.
 
 Stores data in kill ring. Might be yanked back using `C-y'."
   (interactive "*")
   (save-excursion
     (let ((erg (mys--mark-base-bol "line")))
-      (comys-region-as-kill (car erg) (cdr erg)))))
+      (copy-region-as-kill (car erg) (cdr erg)))))
 
-(defun mys-comys-minor-block-bol ()
+(defun mys-copy-minor-block-bol ()
   "Delete minor-block bol at point.
 
 Stores data in kill ring. Might be yanked back using `C-y'."
   (interactive "*")
   (save-excursion
     (let ((erg (mys--mark-base-bol "minor-block")))
-      (comys-region-as-kill (car erg) (cdr erg)))))
+      (copy-region-as-kill (car erg) (cdr erg)))))
 
-(defun mys-comys-paragraph-bol ()
+(defun mys-copy-paragraph-bol ()
   "Delete paragraph bol at point.
 
 Stores data in kill ring. Might be yanked back using `C-y'."
   (interactive "*")
   (save-excursion
     (let ((erg (mys--mark-base-bol "paragraph")))
-      (comys-region-as-kill (car erg) (cdr erg)))))
+      (copy-region-as-kill (car erg) (cdr erg)))))
 
-(defun mys-comys-partial-expression-bol ()
+(defun mys-copy-partial-expression-bol ()
   "Delete partial-expression bol at point.
 
 Stores data in kill ring. Might be yanked back using `C-y'."
   (interactive "*")
   (save-excursion
     (let ((erg (mys--mark-base-bol "partial-expression")))
-      (comys-region-as-kill (car erg) (cdr erg)))))
+      (copy-region-as-kill (car erg) (cdr erg)))))
 
-(defun mys-comys-region-bol ()
+(defun mys-copy-region-bol ()
   "Delete region bol at point.
 
 Stores data in kill ring. Might be yanked back using `C-y'."
   (interactive "*")
   (save-excursion
     (let ((erg (mys--mark-base-bol "region")))
-      (comys-region-as-kill (car erg) (cdr erg)))))
+      (copy-region-as-kill (car erg) (cdr erg)))))
 
-(defun mys-comys-statement-bol ()
+(defun mys-copy-statement-bol ()
   "Delete statement bol at point.
 
 Stores data in kill ring. Might be yanked back using `C-y'."
   (interactive "*")
   (save-excursion
     (let ((erg (mys--mark-base-bol "statement")))
-      (comys-region-as-kill (car erg) (cdr erg)))))
+      (copy-region-as-kill (car erg) (cdr erg)))))
 
-(defun mys-comys-top-level-bol ()
+(defun mys-copy-top-level-bol ()
   "Delete top-level bol at point.
 
 Stores data in kill ring. Might be yanked back using `C-y'."
   (interactive "*")
   (save-excursion
     (let ((erg (mys--mark-base-bol "top-level")))
-      (comys-region-as-kill (car erg) (cdr erg)))))
+      (copy-region-as-kill (car erg) (cdr erg)))))
 
 ;; mys-components-delete-forms
 
@@ -14614,10 +14628,10 @@ Don't store data in kill ring.
 With ARG \\[universal-argument] or `mys-mark-decorators' set to t, `decorators' are included."
   (interactive "P")
  (let* ((mys-mark-decorators (or arg mys-mark-decorators))
-        (erg (mys--mark-base "def" mys-mark-decorators)))
+        (erg (mys--mark-base "func" mys-mark-decorators)))
     (delete-region (car erg) (cdr erg))))
 
-(defun mys-delete-def-or-class (&optional arg)
+(defun mys-delete-func-or-class (&optional arg)
   "Delete DEF-OR-CLASS at point until `beginning-of-line'.
 
 Don't store data in kill ring.
@@ -14870,10 +14884,10 @@ With ARG \\[universal-argument] or `mys-mark-decorators' set to t, decorators ar
 Return beginning and end positions of region, a cons."
   (interactive "P")
   (let ((mys-mark-decorators (or arg mys-mark-decorators)))
-    (mys--mark-base-bol "def" mys-mark-decorators))
+    (mys--mark-base-bol "func" mys-mark-decorators))
   (exchange-point-and-mark)
   (cons (region-beginning) (region-end)))
-(defun mys-mark-def-or-class (&optional arg)
+(defun mys-mark-func-or-class (&optional arg)
   "Mark def-or-class, take beginning of line positions. 
 
 With ARG \\[universal-argument] or `mys-mark-decorators' set to t, decorators are marked too.
@@ -15011,9 +15025,9 @@ If final line isn't empty
 and `mys-close-block-provides-newline' non-nil,
 insert a newline."
   (interactive "*")
-  (mys--close-intern 'mys-def-re))
+  (mys--close-intern 'mys-func-re))
 
-(defun mys-close-def-or-class ()
+(defun mys-close-func-or-class ()
   "Close def-or-class at point.
 
 Set indent level to that of beginning of function definition.
@@ -15022,7 +15036,7 @@ If final line isn't empty
 and `mys-close-block-provides-newline' non-nil,
 insert a newline."
   (interactive "*")
-  (mys--close-intern 'mys-def-or-class-re))
+  (mys--close-intern 'mys-func-or-class-re))
 
 (defun mys-close-minor-block ()
   "Close minor-block at point.
@@ -15142,10 +15156,10 @@ Stores data in kill ring. Might be yanked back using `C-y'."
 
 Stores data in kill ring. Might be yanked back using `C-y'."
   (interactive "*")
-  (let ((erg (mys--mark-base-bol "def")))
+  (let ((erg (mys--mark-base-bol "func")))
     (kill-region (car erg) (cdr erg))))
 
-(defun mys-kill-def-or-class ()
+(defun mys-kill-func-or-class ()
   "Delete def-or-class at point.
 
 Stores data in kill ring. Might be yanked back using `C-y'."
@@ -15290,10 +15304,10 @@ Optional arg DECORATORS: include decorators when called at def or class.
 Also honors setting of `mys-mark-decorators'"
   (interactive)
   (if (called-interactively-p 'interactive)
-      (mys--mark-base "def" (or decorators mys-mark-decorators))
-    (mys--thing-at-point "def" (or decorators mys-mark-decorators))))
+      (mys--mark-base "func" (or decorators mys-mark-decorators))
+    (mys--thing-at-point "func" (or decorators mys-mark-decorators))))
 
-(defun mys-def-or-class (&optional decorators)
+(defun mys-func-or-class (&optional decorators)
   "When called interactively, mark Def-Or-Class at point.
 
 From a programm, return source of Def-Or-Class at point, a string.
@@ -15513,23 +15527,23 @@ Return position, nil otherwise."
       (when (eq orig (point))
         orig))))
 
-(defun mys--end-of-def-bol-p ()
+(defun mys--end-of-func-bol-p ()
   "If at `beginning-of-line' at the end of a def.
 Return position, nil otherwise."
   (let ((orig (point)))
     (save-excursion
-      (mys-backward-def-bol)
-      (mys-forward-def-bol)
+      (mys-backward-func-bol)
+      (mys-forward-func-bol)
       (when (eq orig (point))
         orig))))
 
-(defun mys--end-of-def-or-class-bol-p ()
+(defun mys--end-of-func-or-class-bol-p ()
   "If at `beginning-of-line' at the end of a def-or-class.
 Return position, nil otherwise."
   (let ((orig (point)))
     (save-excursion
-      (mys-backward-def-or-class-bol)
-      (mys-forward-def-or-class-bol)
+      (mys-backward-func-or-class-bol)
+      (mys-forward-func-or-class-bol)
       (when (eq orig (point))
         orig))))
 
@@ -15663,7 +15677,7 @@ Return position, nil otherwise."
       (when (eq orig (point))
         orig))))
 
-(defun mys--end-of-def-p ()
+(defun mys--end-of-func-p ()
   "If cursor is at the end of a def.
 Return position, nil otherwise."
   (let ((orig (point)))
@@ -15673,13 +15687,13 @@ Return position, nil otherwise."
       (when (eq orig (point))
         orig))))
 
-(defun mys--end-of-def-or-class-p ()
+(defun mys--end-of-func-or-class-p ()
   "If cursor is at the end of a def-or-class.
 Return position, nil otherwise."
   (let ((orig (point)))
     (save-excursion
-      (mys-backward-def-or-class)
-      (mys-forward-def-or-class)
+      (mys-backward-func-or-class)
+      (mys-forward-func-or-class)
       (when (eq orig (point))
         orig))))
 
@@ -16173,7 +16187,7 @@ See bug report at launchpad, lp:940812"
 	(nth 3 (parse-partial-sexp (point-min) (point)))
       (and (eq (current-indentation)  0)
 	   (looking-at "[[:alpha:]_]+")
-	   ;; (or (looking-at mys-def-or-class-re)
+	   ;; (or (looking-at mys-func-or-class-re)
            ;;     (looking-at mys-block-or-clause-re)
 	   ;;     (looking-at mys-assignment-re))
 	   ))))
@@ -16220,7 +16234,7 @@ Requires BEG, END as the boundery of region"
       (beginning-of-line)
       (narrow-to-region beg end)
       (goto-char beg)
-      (let ((end (comys-marker end)))
+      (let ((end (copy-marker end)))
 	(forward-line 1)
 	(narrow-to-region (line-beginning-position) end)
 	(mys--re-indent-line)
@@ -16350,7 +16364,7 @@ Optional arg DEDENT: force dedent.
   (interactive "P")
   (unless (eq this-command last-command)
     (setq mys-already-guessed-indent-offset nil))
-  (let ((orig (comys-marker (point)))
+  (let ((orig (copy-marker (point)))
 	;; TAB-leaves-point-in-the-wrong-lp-1178453-test
 	(region (use-region-p))
         cui
@@ -16401,7 +16415,7 @@ mys-trailing-whitespace-smart-delete-p' must be t.
 
 Start from position ORIG"
   (when (or mys-newline-delete-trailing-whitespace-p mys-trailing-whitespace-smart-delete-p)
-    (let ((pos (comys-marker (point))))
+    (let ((pos (copy-marker (point))))
       (save-excursion
 	(goto-char orig)
 	(if (mys-empty-line-p)
@@ -16701,7 +16715,7 @@ Returns the string inserted."
   (let* ((orig (point))
          (funcname (progn
                      (mys-backward-def)
-                     (when (looking-at (concat mys-def-re " *\\([^(]+\\) *(\\(?:[^),]*\\),? *\\([^)]*\\))"))
+                     (when (looking-at (concat mys-func-re " *\\([^(]+\\) *(\\(?:[^),]*\\),? *\\([^)]*\\))"))
                        (match-string-no-properties 2))))
          (args (match-string-no-properties 3))
          (ver (mys-which-python))
@@ -16721,12 +16735,12 @@ Returns the string inserted."
     erg))
 
 ;; Comments
-(defun mys-delete-comments-in-def-or-class ()
+(defun mys-delete-comments-in-func-or-class ()
   "Delete all commented lines in def-or-class at point."
   (interactive "*")
   (save-excursion
-    (let ((beg (mys--beginning-of-def-or-class-position))
-          (end (mys--end-of-def-or-class-position)))
+    (let ((beg (mys--beginning-of-func-or-class-position))
+          (end (mys--end-of-func-or-class-position)))
       (and beg end (mys--delete-comments-intern beg end)))))
 
 (defun mys-delete-comments-in-class ()
@@ -16775,7 +16789,7 @@ Returns the string inserted."
 				     (forward-sexp)
 				     (skip-chars-backward (char-to-string (char-before)))
 				     (point)))))
-      (cons (comys-marker mys--editbeg) (comys-marker mys--editend)))))
+      (cons (copy-marker mys--editbeg) (copy-marker mys--editend)))))
 
 (defun mys--write-edit ()
   "When edit is finished, write docstring back to orginal buffer."
@@ -16833,10 +16847,10 @@ arg MODE: which buffer-mode used in edit-buffer"
   (interactive "*")
   (save-excursion
     (let* ((beg (mys-beginning-of-assignment))
-	   (end (comys-marker (mys-forward-assignment)))
+	   (end (copy-marker (mys-forward-assignment)))
 	   last)
       (goto-char beg)
-      (while (and (not (eobp))(re-search-forward "^\\([ \t]*\\)\[\]\"'{}]" end t 1) (setq last (comys-marker (point))))
+      (while (and (not (eobp))(re-search-forward "^\\([ \t]*\\)\[\]\"'{}]" end t 1) (setq last (copy-marker (point))))
 	(save-excursion (goto-char (match-end 1))
 			(when (eq (current-column) (current-indentation)) (delete-region (point) (progn (skip-chars-backward " \t\r\n\f") (point)))))
 	(when last (goto-char last))))))
@@ -17021,13 +17035,14 @@ With optional \\[universal-argument] get a new dedicated shell."
   "Python mode specialized rx macro.
 This variant of `rx' supports common Python named REGEXPS."
   `(rx-let ((block-start       (seq symbol-start
-                                    (or "def" "class" "if" "elif" "else" "try"
+                                    (or "func" "class" "if" "elif" "else" "try"
+                                        "test" "iterator" "trait" "enum"
                                         "except" "finally" "for" "while" "with"
                                         ;; Python 3.10+ PEP634
                                         "match" "case"
                                         ;; Python 3.5+ PEP492
                                         (and "async" (+ space)
-                                             (or "def" "for" "with")))
+                                             (or "func" "for" "with")))
                                     symbol-end))
             (dedenter          (seq symbol-start
                                     (or "elif" "else" "except" "finally")
@@ -17039,9 +17054,9 @@ This variant of `rx' supports common Python named REGEXPS."
             (decorator         (seq line-start (* space) ?@ (any letter ?_)
                                     (* (any word ?_))))
             (defun             (seq symbol-start
-                                    (or "def" "class"
+                                    (or "func" "class" "test" "iterator" "trait" "enum"
                                         ;; Python 3.5+ PEP492
-                                        (and "async" (+ space) "def"))
+                                        (and "async" (+ space) "func"))
                                     symbol-end))
             (if-name-main      (seq line-start "if" (+ space) "__name__"
                                     (+ space) "==" (+ space)
@@ -17117,19 +17132,29 @@ sign in chained assignment."
           "exec" "in" "continue" "finally" "is" "except" "raise"
           "return"  "async for" "for" "lambda" "await" "match" "case")
          symbol-end)
-    (,(rx symbol-start (or "async def" "def" "class") symbol-end) . mys-def-class-face)
+    (,(rx symbol-start (or "async def" "func" "class" "test" "iterator" "trait" "enum") symbol-end) . mys-func-class-face)
     (,(rx symbol-start (or "import" "from") symbol-end) . mys-import-from-face)
     (,(rx symbol-start (or "try" "if") symbol-end) . mys-try-if-face)
     ;; functions
-    (,(rx symbol-start "def" (1+ space) (group (seq (any letter ?_) (* (any word ?_)))))
+    (,(rx symbol-start "func" (1+ space) (group (seq (any letter ?_) (* (any word ?_)))))
      ;; (1 font-lock-function-name-face))
-     (1 mys-def-face))
+     (1 mys-func-face))
+    (,(rx symbol-start "test" (1+ space) (group (seq (any letter ?_) (* (any word ?_)))))
+     ;; (1 font-lock-function-name-face))
+     (1 mys-func-face))
+    (,(rx symbol-start "iterator" (1+ space) (group (seq (any letter ?_) (* (any word ?_)))))
+     ;; (1 font-lock-function-name-face))
+     (1 mys-func-face))
     (,(rx symbol-start "async def" (1+ space) (group (seq (any letter ?_) (* (any word ?_)))))
      ;; (1 font-lock-function-name-face))
-     (1 mys-def-face))
+     (1 mys-func-face))
     ;; classes
     (,(rx symbol-start (group "class") (1+ space) (group (seq (any letter ?_) (* (any word ?_)))))
-     (1 mys-def-class-face) (2 mys-class-name-face))
+     (1 mys-func-class-face) (2 mys-class-name-face))
+    (,(rx symbol-start (group "trait") (1+ space) (group (seq (any letter ?_) (* (any word ?_)))))
+     (1 mys-func-class-face) (2 mys-class-name-face))
+    (,(rx symbol-start (group "enum") (1+ space) (group (seq (any letter ?_) (* (any word ?_)))))
+     (1 mys-func-class-face) (2 mys-class-name-face))
     (,(rx symbol-start
           (or"Ellipsis" "True" "False" "None"  "__debug__" "NotImplemented") symbol-end) . mys-pseudo-keyword-face)
     ;; Decorators.
@@ -17299,12 +17324,12 @@ Indent clause by COUNT spaces."]
 	  :help " `mys-shift-comment-right'
 Indent comment by COUNT spaces."]
 
-	 ["Shift def right" mys-shift-def-right
-	  :help " `mys-shift-def-right'
+	 ["Shift def right" mys-shift-func-right
+	  :help " `mys-shift-func-right'
 Indent def by COUNT spaces."]
 
-	 ["Shift def or class right" mys-shift-def-or-class-right
-	  :help " `mys-shift-def-or-class-right'
+	 ["Shift def or class right" mys-shift-func-or-class-right
+	  :help " `mys-shift-func-or-class-right'
 Indent def-or-class by COUNT spaces."]
 
 	 ["Shift indent right" mys-shift-indent-right
@@ -17351,12 +17376,12 @@ Dedent clause by COUNT spaces."]
 	  :help " `mys-shift-comment-left'
 Dedent comment by COUNT spaces."]
 
-	 ["Shift def left" mys-shift-def-left
-	  :help " `mys-shift-def-left'
+	 ["Shift def left" mys-shift-func-left
+	  :help " `mys-shift-func-left'
 Dedent def by COUNT spaces."]
 
-	 ["Shift def or class left" mys-shift-def-or-class-left
-	  :help " `mys-shift-def-or-class-left'
+	 ["Shift def or class left" mys-shift-func-or-class-left
+	  :help " `mys-shift-func-or-class-left'
 Dedent def-or-class by COUNT spaces."]
 
 	 ["Shift indent left" mys-shift-indent-left
@@ -17403,8 +17428,8 @@ Mark comment at point."]
 	 :help " `mys-mark-def'
 Mark def, take beginning of line positions."]
 
-	["Mark def or class" mys-mark-def-or-class
-	 :help " `mys-mark-def-or-class'
+	["Mark def or class" mys-mark-func-or-class
+	 :help " `mys-mark-func-or-class'
 Mark def-or-class, take beginning of line positions."]
 
 	["Mark expression" mys-mark-expression
@@ -17455,72 +17480,72 @@ Mark top-level, take beginning of line positions."]
 	 :help " `mys-mark-try-block'
 Mark try-block, take beginning of line positions."])
        ("Copy"
-	["Copy block" mys-comys-block
-	 :help " `mys-comys-block'
+	["Copy block" mys-copy-block
+	 :help " `mys-copy-block'
 Copy block at point."]
 
-	["Copy block or clause" mys-comys-block-or-clause
-	 :help " `mys-comys-block-or-clause'
+	["Copy block or clause" mys-copy-block-or-clause
+	 :help " `mys-copy-block-or-clause'
 Copy block-or-clause at point."]
 
-	["Copy class" mys-comys-class
-	 :help " `mys-comys-class'
+	["Copy class" mys-copy-class
+	 :help " `mys-copy-class'
 Copy class at point."]
 
-	["Copy clause" mys-comys-clause
-	 :help " `mys-comys-clause'
+	["Copy clause" mys-copy-clause
+	 :help " `mys-copy-clause'
 Copy clause at point."]
 
-	["Copy comment" mys-comys-comment
-	 :help " `mys-comys-comment'"]
+	["Copy comment" mys-copy-comment
+	 :help " `mys-copy-comment'"]
 
-	["Copy def" mys-comys-def
-	 :help " `mys-comys-def'
+	["Copy def" mys-copy-def
+	 :help " `mys-copy-def'
 Copy def at point."]
 
-	["Copy def or class" mys-comys-def-or-class
-	 :help " `mys-comys-def-or-class'
+	["Copy def or class" mys-copy-func-or-class
+	 :help " `mys-copy-func-or-class'
 Copy def-or-class at point."]
 
-	["Copy expression" mys-comys-expression
-	 :help " `mys-comys-expression'
+	["Copy expression" mys-copy-expression
+	 :help " `mys-copy-expression'
 Copy expression at point."]
 
-	["Copy except block" mys-comys-except-block
-	 :help " `mys-comys-except-block'"]
+	["Copy except block" mys-copy-except-block
+	 :help " `mys-copy-except-block'"]
 
-	["Copy if block" mys-comys-if-block
-	 :help " `mys-comys-if-block'"]
+	["Copy if block" mys-copy-if-block
+	 :help " `mys-copy-if-block'"]
 
-	["Copy indent" mys-comys-indent
-	 :help " `mys-comys-indent'
+	["Copy indent" mys-copy-indent
+	 :help " `mys-copy-indent'
 Copy indent at point."]
 
-	["Copy line" mys-comys-line
-	 :help " `mys-comys-line'
+	["Copy line" mys-copy-line
+	 :help " `mys-copy-line'
 Copy line at point."]
 
-	["Copy minor block" mys-comys-minor-block
-	 :help " `mys-comys-minor-block'
+	["Copy minor block" mys-copy-minor-block
+	 :help " `mys-copy-minor-block'
 Copy minor-block at point."]
 
-	["Copy partial expression" mys-comys-partial-expression
-	 :help " `mys-comys-partial-expression'
+	["Copy partial expression" mys-copy-partial-expression
+	 :help " `mys-copy-partial-expression'
 Copy partial-expression at point."]
 
-	["Copy paragraph" mys-comys-paragraph
-	 :help " `mys-comys-paragraph'
+	["Copy paragraph" mys-copy-paragraph
+	 :help " `mys-copy-paragraph'
 Copy paragraph at point."]
 
-	["Copy section" mys-comys-section
-	 :help " `mys-comys-section'"]
+	["Copy section" mys-copy-section
+	 :help " `mys-copy-section'"]
 
-	["Copy statement" mys-comys-statement
-	 :help " `mys-comys-statement'
+	["Copy statement" mys-copy-statement
+	 :help " `mys-copy-statement'
 Copy statement at point."]
 
-	["Copy top level" mys-comys-top-level
-	 :help " `mys-comys-top-level'
+	["Copy top level" mys-copy-top-level
+	 :help " `mys-copy-top-level'
 Copy top-level at point."])
        ("Kill"
 	["Kill block" mys-kill-block
@@ -17547,8 +17572,8 @@ Delete comment at point."]
 	 :help " `mys-kill-def'
 Delete def at point."]
 
-	["Kill def or class" mys-kill-def-or-class
-	 :help " `mys-kill-def-or-class'
+	["Kill def or class" mys-kill-func-or-class
+	 :help " `mys-kill-func-or-class'
 Delete def-or-class at point."]
 
 	["Kill expression" mys-kill-expression
@@ -17623,8 +17648,8 @@ Delete COMMENT at point."]
 	 :help " `mys-delete-def'
 Delete DEF at point until beginning-of-line."]
 
-	["Delete def or class" mys-delete-def-or-class
-	 :help " `mys-delete-def-or-class'
+	["Delete def or class" mys-delete-func-or-class
+	 :help " `mys-delete-func-or-class'
 Delete DEF-OR-CLASS at point until beginning-of-line."]
 
 	["Delete expression" mys-delete-expression
@@ -17695,8 +17720,8 @@ Comments clause at point."]
 	 :help " `mys-comment-def'
 Comments def at point."]
 
-	["Comment def or class" mys-comment-def-or-class
-	 :help " `mys-comment-def-or-class'
+	["Comment def or class" mys-comment-func-or-class
+	 :help " `mys-comment-func-or-class'
 Comments def-or-class at point."]
 
 	["Comment indent" mys-comment-indent
@@ -17721,8 +17746,8 @@ Comments top-level at point."]))
       ("Move"
        ("Backward"
 
-	["Backward def or class" mys-backward-def-or-class
-	 :help " `mys-backward-def-or-class'
+	["Backward def or class" mys-backward-func-or-class
+	 :help " `mys-backward-func-or-class'
 Go to beginning of def-or-class."]
 
 	["Backward class" mys-backward-class
@@ -17795,8 +17820,8 @@ Go to beginning of `minor-block'."]
 	  :help " `mys-backward-try-block'
 Go to beginning of `try-block'."]))
        ("Forward"
-	["Forward def or class" mys-forward-def-or-class
-	 :help " `mys-forward-def-or-class'
+	["Forward def or class" mys-forward-func-or-class
+	 :help " `mys-forward-func-or-class'
 Go to end of def-or-class."]
 
 	["Forward class" mys-forward-class
@@ -17889,12 +17914,12 @@ Go to beginning of class, go to BOL."]
 	  :help " `mys-backward-clause-bol'
 Go to beginning of `clause', go to BOL."]
 
-	 ["Backward def bol" mys-backward-def-bol
-	  :help " `mys-backward-def-bol'
+	 ["Backward def bol" mys-backward-func-bol
+	  :help " `mys-backward-func-bol'
 Go to beginning of def, go to BOL."]
 
-	 ["Backward def or class bol" mys-backward-def-or-class-bol
-	  :help " `mys-backward-def-or-class-bol'
+	 ["Backward def or class bol" mys-backward-func-or-class-bol
+	  :help " `mys-backward-func-or-class-bol'
 Go to beginning of def-or-class, go to BOL."]
 
 	 ["Backward elif block bol" mys-backward-elif-block-bol
@@ -17958,12 +17983,12 @@ Goto beginning of line following end of class."]
 	  :help " `mys-forward-clause-bol'
 Goto beginning of line following end of clause."]
 
-	 ["Forward def bol" mys-forward-def-bol
-	  :help " `mys-forward-def-bol'
+	 ["Forward def bol" mys-forward-func-bol
+	  :help " `mys-forward-func-bol'
 Goto beginning of line following end of def."]
 
-	 ["Forward def or class bol" mys-forward-def-or-class-bol
-	  :help " `mys-forward-def-or-class-bol'
+	 ["Forward def or class bol" mys-forward-func-or-class-bol
+	  :help " `mys-forward-func-or-class-bol'
 Goto beginning of line following end of def-or-class."]
 
 	 ["Forward elif block bol" mys-forward-elif-block-bol
@@ -18047,8 +18072,8 @@ Send clause at point to interpreter."]
 	:help " `mys-execute-def'
 Send def at point to interpreter."]
 
-       ["Execute def or class" mys-execute-def-or-class
-	:help " `mys-execute-def-or-class'
+       ["Execute def or class" mys-execute-func-or-class
+	:help " `mys-execute-func-or-class'
 Send def-or-class at point to interpreter."]
 
        ["Execute expression" mys-execute-expression
@@ -18108,12 +18133,12 @@ Send class at point to Imys interpreter."]
 	  :help " `mys-execute-clause-imys'
 Send clause at point to Imys interpreter."]
 
-	 ["Execute def imys" mys-execute-def-imys
-	  :help " `mys-execute-def-imys'
+	 ["Execute def imys" mys-execute-func-imys
+	  :help " `mys-execute-func-imys'
 Send def at point to Imys interpreter."]
 
-	 ["Execute def or class imys" mys-execute-def-or-class-imys
-	  :help " `mys-execute-def-or-class-imys'
+	 ["Execute def or class imys" mys-execute-func-or-class-imys
+	  :help " `mys-execute-func-or-class-imys'
 Send def-or-class at point to Imys interpreter."]
 
 	 ["Execute expression imys" mys-execute-expression-imys
@@ -18167,11 +18192,11 @@ Send top-level at point to Imys interpreter."])
 	 ["Execute clause imys2" mys-execute-clause-imys2
 	  :help " `mys-execute-clause-imys2'"]
 
-	 ["Execute def imys2" mys-execute-def-imys2
-	  :help " `mys-execute-def-imys2'"]
+	 ["Execute def imys2" mys-execute-func-imys2
+	  :help " `mys-execute-func-imys2'"]
 
-	 ["Execute def or class imys2" mys-execute-def-or-class-imys2
-	  :help " `mys-execute-def-or-class-imys2'"]
+	 ["Execute def or class imys2" mys-execute-func-or-class-imys2
+	  :help " `mys-execute-func-or-class-imys2'"]
 
 	 ["Execute expression imys2" mys-execute-expression-imys2
 	  :help " `mys-execute-expression-imys2'"]
@@ -18220,12 +18245,12 @@ Send class at point to Imys interpreter."]
 	  :help " `mys-execute-clause-imys3'
 Send clause at point to Imys interpreter."]
 
-	 ["Execute def imys3" mys-execute-def-imys3
-	  :help " `mys-execute-def-imys3'
+	 ["Execute def imys3" mys-execute-func-imys3
+	  :help " `mys-execute-func-imys3'
 Send def at point to Imys interpreter."]
 
-	 ["Execute def or class imys3" mys-execute-def-or-class-imys3
-	  :help " `mys-execute-def-or-class-imys3'
+	 ["Execute def or class imys3" mys-execute-func-or-class-imys3
+	  :help " `mys-execute-func-or-class-imys3'
 Send def-or-class at point to Imys interpreter."]
 
 	 ["Execute expression imys3" mys-execute-expression-imys3
@@ -18284,12 +18309,12 @@ Send class at point to Jython interpreter."]
 	  :help " `mys-execute-clause-jython'
 Send clause at point to Jython interpreter."]
 
-	 ["Execute def jython" mys-execute-def-jython
-	  :help " `mys-execute-def-jython'
+	 ["Execute def jython" mys-execute-func-jython
+	  :help " `mys-execute-func-jython'
 Send def at point to Jython interpreter."]
 
-	 ["Execute def or class jython" mys-execute-def-or-class-jython
-	  :help " `mys-execute-def-or-class-jython'
+	 ["Execute def or class jython" mys-execute-func-or-class-jython
+	  :help " `mys-execute-func-or-class-jython'
 Send def-or-class at point to Jython interpreter."]
 
 	 ["Execute expression jython" mys-execute-expression-jython
@@ -18348,12 +18373,12 @@ Send class at point to default interpreter."]
 	  :help " `mys-execute-clause-python'
 Send clause at point to default interpreter."]
 
-	 ["Execute def python" mys-execute-def-python
-	  :help " `mys-execute-def-python'
+	 ["Execute def python" mys-execute-func-python
+	  :help " `mys-execute-func-python'
 Send def at point to default interpreter."]
 
-	 ["Execute def or class python" mys-execute-def-or-class-python
-	  :help " `mys-execute-def-or-class-python'
+	 ["Execute def or class python" mys-execute-func-or-class-python
+	  :help " `mys-execute-func-or-class-python'
 Send def-or-class at point to default interpreter."]
 
 	 ["Execute expression python" mys-execute-expression-python
@@ -18412,12 +18437,12 @@ Send class at point to Python2 interpreter."]
 	  :help " `mys-execute-clause-python2'
 Send clause at point to Python2 interpreter."]
 
-	 ["Execute def python2" mys-execute-def-python2
-	  :help " `mys-execute-def-python2'
+	 ["Execute def python2" mys-execute-func-python2
+	  :help " `mys-execute-func-python2'
 Send def at point to Python2 interpreter."]
 
-	 ["Execute def or class python2" mys-execute-def-or-class-python2
-	  :help " `mys-execute-def-or-class-python2'
+	 ["Execute def or class python2" mys-execute-func-or-class-python2
+	  :help " `mys-execute-func-or-class-python2'
 Send def-or-class at point to Python2 interpreter."]
 
 	 ["Execute expression python2" mys-execute-expression-python2
@@ -18476,12 +18501,12 @@ Send class at point to Python3 interpreter."]
 	  :help " `mys-execute-clause-python3'
 Send clause at point to Python3 interpreter."]
 
-	 ["Execute def python3" mys-execute-def-python3
-	  :help " `mys-execute-def-python3'
+	 ["Execute def python3" mys-execute-func-python3
+	  :help " `mys-execute-func-python3'
 Send def at point to Python3 interpreter."]
 
-	 ["Execute def or class python3" mys-execute-def-or-class-python3
-	  :help " `mys-execute-def-or-class-python3'
+	 ["Execute def or class python3" mys-execute-func-or-class-python3
+	  :help " `mys-execute-func-or-class-python3'
 Send def-or-class at point to Python3 interpreter."]
 
 	 ["Execute expression python3" mys-execute-expression-python3
@@ -18537,8 +18562,8 @@ Hide top-level at point."]
 	 :help " `mys-hide-def'
 Hide def at point."]
 
-	["Hide def or class" mys-hide-def-or-class
-	 :help " `mys-hide-def-or-class'
+	["Hide def or class" mys-hide-func-or-class
+	 :help " `mys-hide-func-or-class'
 Hide def-or-class at point."]
 
 	["Hide statement" mys-hide-statement
@@ -18633,12 +18658,12 @@ Process class at point by a Python interpreter."]
 	:help " `mys-execute-clause-fast'
 Process clause at point by a Python interpreter."]
 
-       ["Execute def fast" mys-execute-def-fast
-	:help " `mys-execute-def-fast'
+       ["Execute def fast" mys-execute-func-fast
+	:help " `mys-execute-func-fast'
 Process def at point by a Python interpreter."]
 
-       ["Execute def or class fast" mys-execute-def-or-class-fast
-	:help " `mys-execute-def-or-class-fast'
+       ["Execute def or class fast" mys-execute-func-or-class-fast
+	:help " `mys-execute-func-or-class-fast'
 Process def-or-class at point by a Python interpreter."]
 
        ["Execute expression fast" mys-execute-expression-fast
@@ -19252,7 +19277,7 @@ Switch between `mys--imenu-create-index' from 5.1 series and `mys--imenu-create-
 	  ["Mark decorators"
 	   (setq mys-mark-decorators
 		 (not mys-mark-decorators))
-	   :help "If mys-mark-def-or-class functions should mark decorators too. Default is `nil'. Use `M-x customize-variable' to set it permanently"
+	   :help "If mys-mark-func-or-class functions should mark decorators too. Default is `nil'. Use `M-x customize-variable' to set it permanently"
 	   :style toggle :selected mys-mark-decorators]
 
 	  ["Fontify shell buffer "
@@ -19666,8 +19691,8 @@ Default is t")
         (define-key map [(control c) (control n)] 'mys-forward-statement)
         (define-key map [(control c) (control u)] 'mys-backward-block)
         (define-key map [(control c) (control q)] 'mys-forward-block)
-        (define-key map [(control meta a)] 'mys-backward-def-or-class)
-        (define-key map [(control meta e)] 'mys-forward-def-or-class)
+        (define-key map [(control meta a)] 'mys-backward-func-or-class)
+        (define-key map [(control meta e)] 'mys-forward-func-or-class)
         ;; (define-key map [(meta i)] 'mys-indent-forward-line)
         ;; (define-key map [(control j)] 'mys-newline-and-indent)
 	(define-key map (kbd "C-j") 'newline)
@@ -19691,14 +19716,14 @@ Default is t")
         (define-key map [(control c) (control m)] 'mys-execute-import-or-reload)
         (define-key map [(control c) (control s)] 'mys-execute-string)
         (define-key map [(control c) (|)] 'mys-execute-region)
-        (define-key map [(control meta x)] 'mys-execute-def-or-class)
+        (define-key map [(control meta x)] 'mys-execute-func-or-class)
         (define-key map [(control c) (!)] 'mys-shell)
         (define-key map [(control c) (control t)] 'mys-toggle-shell)
-        (define-key map [(control meta h)] 'mys-mark-def-or-class)
+        (define-key map [(control meta h)] 'mys-mark-func-or-class)
         (define-key map [(control c) (control k)] 'mys-mark-block-or-clause)
         (define-key map [(control c) (.)] 'mys-expression)
         ;; Miscellaneous
-        ;; (define-key map [(super q)] 'mys-comys-statement)
+        ;; (define-key map [(super q)] 'mys-copy-statement)
         (define-key map [(control c) (control d)] 'mys-pdbtrack-toggle-stack-tracking)
         (define-key map [(control c) (control f)] 'mys-sort-imports)
         (define-key map [(control c) (\#)] 'mys-comment-region)
@@ -19706,7 +19731,7 @@ Default is t")
         (define-key map [(control c) (control e)] 'mys-help-at-point)
         (define-key map [(control c) (-)] 'mys-up-exception)
         (define-key map [(control c) (=)] 'mys-down-exception)
-        (define-key map [(control x) (n) (d)] 'mys-narrow-to-def-or-class)
+        (define-key map [(control x) (n) (d)] 'mys-narrow-to-func-or-class)
         ;; information
         (define-key map [(control c) (control b)] 'mys-submit-bug-report)
         (define-key map [(control c) (control v)] 'mys-version)
@@ -19751,8 +19776,8 @@ Default is t")
     (define-key map [(control c)(control n)] 'mys-forward-statement)
     (define-key map [(control c)(control u)] 'mys-backward-block)
     (define-key map [(control c)(control q)] 'mys-forward-block)
-    (define-key map [(control meta a)] 'mys-backward-def-or-class)
-    (define-key map [(control meta e)] 'mys-forward-def-or-class)
+    (define-key map [(control meta a)] 'mys-backward-func-or-class)
+    (define-key map [(control meta e)] 'mys-forward-func-or-class)
     (define-key map [(control j)] 'mys-newline-and-indent)
     (define-key map [(super backspace)] 'mys-dedent)
     ;; (define-key map [(control return)] 'mys-newline-and-dedent)
@@ -19764,16 +19789,16 @@ Default is t")
     (define-key map [(control c)(tab)] 'mys-indent-region)
     (define-key map [(control c)(:)] 'mys-guess-indent-offset)
     ;; subprocess commands
-    (define-key map [(control meta h)] 'mys-mark-def-or-class)
+    (define-key map [(control meta h)] 'mys-mark-func-or-class)
     (define-key map [(control c)(control k)] 'mys-mark-block-or-clause)
     (define-key map [(control c)(.)] 'mys-expression)
     ;; Miscellaneous
-    ;; (define-key map [(super q)] 'mys-comys-statement)
+    ;; (define-key map [(super q)] 'mys-copy-statement)
     (define-key map [(control c)(control d)] 'mys-pdbtrack-toggle-stack-tracking)
     (define-key map [(control c)(\#)] 'mys-comment-region)
     (define-key map [(control c)(\?)] 'mys-describe-mode)
     (define-key map [(control c)(control e)] 'mys-help-at-point)
-    (define-key map [(control x) (n) (d)] 'mys-narrow-to-def-or-class)
+    (define-key map [(control x) (n) (d)] 'mys-narrow-to-func-or-class)
     ;; information
     (define-key map [(control c)(control b)] 'mys-submit-bug-report)
     (define-key map [(control c)(control v)] 'mys-version)
@@ -19842,8 +19867,8 @@ Returns outmost indentation reached."]
 	    ["Shift comment right" mys-shift-comment-right
 	     :help " `mys-shift-comment-right'"]
 
-	    ["Shift def right" mys-shift-def-right
-	     :help " `mys-shift-def-right'
+	    ["Shift def right" mys-shift-func-right
+	     :help " `mys-shift-func-right'
 Indent def by COUNT spaces.
 
 COUNT defaults to `mys-indent-offset',
@@ -19851,8 +19876,8 @@ use [universal-argument] to specify a different value.
 
 Returns outmost indentation reached."]
 
-	    ["Shift def or class right" mys-shift-def-or-class-right
-	     :help " `mys-shift-def-or-class-right'
+	    ["Shift def or class right" mys-shift-func-or-class-right
+	     :help " `mys-shift-func-or-class-right'
 Indent def-or-class by COUNT spaces.
 
 COUNT defaults to `mys-indent-offset',
@@ -19938,8 +19963,8 @@ Returns outmost indentation reached."]
 	    ["Shift comment left" mys-shift-comment-left
 	     :help " `mys-shift-comment-left'"]
 
-	    ["Shift def left" mys-shift-def-left
-	     :help " `mys-shift-def-left'
+	    ["Shift def left" mys-shift-func-left
+	     :help " `mys-shift-func-left'
 Dedent def by COUNT spaces.
 
 COUNT defaults to `mys-indent-offset',
@@ -19947,8 +19972,8 @@ use [universal-argument] to specify a different value.
 
 Returns outmost indentation reached."]
 
-	    ["Shift def or class left" mys-shift-def-or-class-left
-	     :help " `mys-shift-def-or-class-left'
+	    ["Shift def or class left" mys-shift-func-or-class-left
+	     :help " `mys-shift-func-or-class-left'
 Dedent def-or-class by COUNT spaces.
 
 COUNT defaults to `mys-indent-offset',
@@ -20030,8 +20055,8 @@ Mark def at point.
 With C-u or `mys-mark-decorators' set to `t', decorators are marked too.
 Returns beginning and end positions of marked area, a cons."]
 
-	   ["Mark def or class" mys-mark-def-or-class
-	    :help " `mys-mark-def-or-class'
+	   ["Mark def or class" mys-mark-func-or-class
+	    :help " `mys-mark-func-or-class'
 Mark def-or-class at point.
 
 With C-u or `mys-mark-decorators' set to `t', decorators are marked too.
@@ -20080,77 +20105,77 @@ Mark top-level at point.
 Returns beginning and end positions of marked area, a cons."]
            )
           ("Copy"
-	   ["Copy block" mys-comys-block
-	    :help " `mys-comys-block'
+	   ["Copy block" mys-copy-block
+	    :help " `mys-copy-block'
 Copy block at point.
 
 Store data in kill ring, so it might yanked back."]
 
-	   ["Copy block or clause" mys-comys-block-or-clause
-	    :help " `mys-comys-block-or-clause'
+	   ["Copy block or clause" mys-copy-block-or-clause
+	    :help " `mys-copy-block-or-clause'
 Copy block-or-clause at point.
 
 Store data in kill ring, so it might yanked back."]
 
-	   ["Copy class" mys-comys-class
-	    :help " `mys-comys-class'
+	   ["Copy class" mys-copy-class
+	    :help " `mys-copy-class'
 Copy class at point.
 
 Store data in kill ring, so it might yanked back."]
 
-	   ["Copy clause" mys-comys-clause
-	    :help " `mys-comys-clause'
+	   ["Copy clause" mys-copy-clause
+	    :help " `mys-copy-clause'
 Copy clause at point.
 
 Store data in kill ring, so it might yanked back."]
 
-	   ["Copy comment" mys-comys-comment
-	    :help " `mys-comys-comment'"]
+	   ["Copy comment" mys-copy-comment
+	    :help " `mys-copy-comment'"]
 
-	   ["Copy def" mys-comys-def
-	    :help " `mys-comys-def'
+	   ["Copy def" mys-copy-def
+	    :help " `mys-copy-def'
 Copy def at point.
 
 Store data in kill ring, so it might yanked back."]
 
-	   ["Copy def or class" mys-comys-def-or-class
-	    :help " `mys-comys-def-or-class'
+	   ["Copy def or class" mys-copy-func-or-class
+	    :help " `mys-copy-func-or-class'
 Copy def-or-class at point.
 
 Store data in kill ring, so it might yanked back."]
 
-	   ["Copy expression" mys-comys-expression
-	    :help " `mys-comys-expression'
+	   ["Copy expression" mys-copy-expression
+	    :help " `mys-copy-expression'
 Copy expression at point.
 
 Store data in kill ring, so it might yanked back."]
 
-	   ["Copy line" mys-comys-line
-	    :help " `mys-comys-line'"]
+	   ["Copy line" mys-copy-line
+	    :help " `mys-copy-line'"]
 
-	   ["Copy minor block" mys-comys-minor-block
-	    :help " `mys-comys-minor-block'
+	   ["Copy minor block" mys-copy-minor-block
+	    :help " `mys-copy-minor-block'
 Copy minor-block at point.
 
 Store data in kill ring, so it might yanked back."]
 
-	   ["Copy paragraph" mys-comys-paragraph
-	    :help " `mys-comys-paragraph'"]
+	   ["Copy paragraph" mys-copy-paragraph
+	    :help " `mys-copy-paragraph'"]
 
-	   ["Copy partial expression" mys-comys-partial-expression
-	    :help " `mys-comys-partial-expression'
+	   ["Copy partial expression" mys-copy-partial-expression
+	    :help " `mys-copy-partial-expression'
 Copy partial-expression at point.
 
 Store data in kill ring, so it might yanked back."]
 
-	   ["Copy statement" mys-comys-statement
-	    :help " `mys-comys-statement'
+	   ["Copy statement" mys-copy-statement
+	    :help " `mys-copy-statement'
 Copy statement at point.
 
 Store data in kill ring, so it might yanked back."]
 
-	   ["Copy top level" mys-comys-top-level
-	    :help " `mys-comys-top-level'
+	   ["Copy top level" mys-copy-top-level
+	    :help " `mys-copy-top-level'
 Copy top-level at point.
 
 Store data in kill ring, so it might yanked back."]
@@ -20189,8 +20214,8 @@ Delete `def' at point.
 
 Stores data in kill ring"]
 
-	   ["Kill def or class" mys-kill-def-or-class
-	    :help " `mys-kill-def-or-class'
+	   ["Kill def or class" mys-kill-func-or-class
+	    :help " `mys-kill-func-or-class'
 Delete `def-or-class' at point.
 
 Stores data in kill ring"]
@@ -20267,8 +20292,8 @@ Delete DEF at point.
 Don't store data in kill ring.
 With C-u or `mys-mark-decorators' set to `t', `decorators' are included."]
 
-	   ["Delete def or class" mys-delete-def-or-class
-	    :help " `mys-delete-def-or-class'
+	   ["Delete def or class" mys-delete-func-or-class
+	    :help " `mys-delete-func-or-class'
 Delete DEF-OR-CLASS at point.
 
 Don't store data in kill ring.
@@ -20346,8 +20371,8 @@ Comments def at point.
 Uses double hash (`#') comment starter when `mys-block-comment-prefix-p' is  `t',
 the default"]
 
-	   ["Comment def or class" mys-comment-def-or-class
-	    :help " `mys-comment-def-or-class'
+	   ["Comment def or class" mys-comment-func-or-class
+	    :help " `mys-comment-func-or-class'
 Comments def-or-class at point.
 
 Uses double hash (`#') comment starter when `mys-block-comment-prefix-p' is  `t',
@@ -20396,8 +20421,8 @@ Returns beginning of def if successful, nil otherwise
 
 When `mys-mark-decorators' is non-nil, decorators are considered too."]
 
-	   ["Beginning of def or class" mys-backward-def-or-class
-	    :help " `mys-backward-def-or-class'
+	   ["Beginning of def or class" mys-backward-func-or-class
+	    :help " `mys-backward-func-or-class'
 Go to beginning def-or-class, skip whitespace at BOL.
 
 Returns beginning of def-or-class if successful, nil otherwise
@@ -20494,8 +20519,8 @@ Go to end of def.
 
 Returns end of def if successful, nil otherwise"]
 
-	   ["End of def or class" mys-forward-def-or-class
-	    :help " `mys-forward-def-or-class'
+	   ["End of def or class" mys-forward-func-or-class
+	    :help " `mys-forward-func-or-class'
 Go to end of def-or-class.
 
 Returns end of def-or-class if successful, nil otherwise"]
@@ -20585,16 +20610,16 @@ Go to beginning clause, go to BOL.
 
 Returns beginning of clause if successful, nil otherwise"]
 
-	    ["Beginning of def bol" mys-beginning-of-def-bol
-	     :help " `mys-beginning-of-def-bol'
+	    ["Beginning of def bol" mys-beginning-of-func-bol
+	     :help " `mys-beginning-of-func-bol'
 Go to beginning def, go to BOL.
 
 Returns beginning of def if successful, nil otherwise
 
 When `mys-mark-decorators' is non-nil, decorators are considered too."]
 
-	    ["Beginning of def or class bol" mys-backward-def-or-class-bol
-	     :help " `mys-backward-def-or-class-bol'
+	    ["Beginning of def or class bol" mys-backward-func-or-class-bol
+	     :help " `mys-backward-func-or-class-bol'
 Go to beginning def-or-class, go to BOL.
 
 Returns beginning of def-or-class if successful, nil otherwise
@@ -20673,19 +20698,19 @@ Goto beginning of line following end of clause.
 
 See also `mys-down-clause': down from current definition to next beginning of clause below."]
 
-	    ["End of def bol" mys-forward-def-bol
-	     :help " `mys-forward-def-bol'
+	    ["End of def bol" mys-forward-func-bol
+	     :help " `mys-forward-func-bol'
 Goto beginning of line following end of def.
   Returns position reached, if successful, nil otherwise.
 
 See also `mys-down-def': down from current definition to next beginning of def below."]
 
-	    ["End of def or class bol" mys-forward-def-or-class-bol
-	     :help " `mys-forward-def-or-class-bol'
+	    ["End of def or class bol" mys-forward-func-or-class-bol
+	     :help " `mys-forward-func-or-class-bol'
 Goto beginning of line following end of def-or-class.
   Returns position reached, if successful, nil otherwise.
 
-See also `mys-down-def-or-class': down from current definition to next beginning of def-or-class below."]
+See also `mys-down-func-or-class': down from current definition to next beginning of def-or-class below."]
 
 	    ["End of elif block bol" mys-forward-elif-block-bol
 	     :help " `mys-forward-elif-block-bol'
@@ -21363,7 +21388,7 @@ Switch between `mys--imenu-create-index' from 5.1 series and `mys--imenu-create-
 	     ["Mark decorators"
 	      (setq mys-mark-decorators
 		    (not mys-mark-decorators))
-	      :help "If mys-mark-def-or-class functions should mark decorators too. Default is `nil'. Use `M-x customize-variable' to set it permanently"
+	      :help "If mys-mark-func-or-class functions should mark decorators too. Default is `nil'. Use `M-x customize-variable' to set it permanently"
 	      :style toggle :selected mys-mark-decorators]
 
 	     ["Fontify shell buffer "
@@ -22508,7 +22533,7 @@ Useful for newly defined symbol, not known to python yet."
     (save-restriction
       (widen)
       (goto-char (point-min))
-      (when (re-search-forward (concat mys-def-or-class-re " *" symb) nil (quote move) 1)
+      (when (re-search-forward (concat mys-func-or-class-re " *" symb) nil (quote move) 1)
         (forward-line 1)
         (when (looking-at "[ \t]*\"\"\"\\|[ \t]*'''\\|[ \t]*'[^]+\\|[ \t]*\"[^\"]+")
           (goto-char (match-end 0))
@@ -22538,12 +22563,12 @@ not inside a defun."
         (goto-char (line-end-position))
         (forward-comment -9999)
         (setq min-indent (current-indentation))
-        (while (mys-backward-def-or-class)
+        (while (mys-backward-func-or-class)
           (when (or (< (current-indentation) min-indent)
                     first-run)
             (setq first-run nil)
             (setq min-indent (current-indentation))
-            (looking-at mys-def-or-class-re)
+            (looking-at mys-func-or-class-re)
             (setq names (cons
                          (if (not include-type)
                              (match-string-no-properties 1)
@@ -22647,14 +22672,14 @@ variable docs begin with ->.
 \\[mys-execute-import-or-reload]\timports or reloads the file in the Python interpreter
 \\[mys-execute-buffer]\tsends the entire buffer to the Python interpreter
 \\[mys-execute-region]\tsends the current region
-\\[mys-execute-def-or-class]\tsends the current function or class definition
+\\[mys-execute-func-or-class]\tsends the current function or class definition
 \\[mys-execute-string]\tsends an arbitrary string
 \\[mys-shell]\tstarts a Python interpreter window; this will be used by
 \tsubsequent Python execution commands
 %c:mys-execute-import-or-reload
 %c:mys-execute-buffer
 %c:mys-execute-region
-%c:mys-execute-def-or-class
+%c:mys-execute-func-or-class
 %c:mys-execute-string
 %c:mys-shell
 
@@ -22813,12 +22838,12 @@ the block structure:
 @MARKING & MANIPULATING REGIONS OF CODE
 
 \\[mys-mark-block]\t mark block of lines
-\\[mys-mark-def-or-class]\t mark smallest enclosing def
-\\[universal-argument] \\[mys-mark-def-or-class]\t mark smallest enclosing class
+\\[mys-mark-func-or-class]\t mark smallest enclosing def
+\\[universal-argument] \\[mys-mark-func-or-class]\t mark smallest enclosing class
 \\[comment-region]\t comment out region of code
 \\[universal-argument] \\[comment-region]\t uncomment region of code
 %c:mys-mark-block
-%c:mys-mark-def-or-class
+%c:mys-mark-func-or-class
 %c:comment-region
 
 @MOVING POINT
@@ -22826,10 +22851,10 @@ the block structure:
 \\[mys-previous-statement]\t move to statement preceding point
 \\[mys-next-statement]\t move to statement following point
 \\[mys-goto-block-up]\t move up to start of current block
-\\[mys-backward-def-or-class]\t move to start of def
-\\[universal-argument] \\[mys-backward-def-or-class]\t move to start of class
-\\[mys-forward-def-or-class]\t move to end of def
-\\[universal-argument] \\[mys-forward-def-or-class]\t move to end of class
+\\[mys-backward-func-or-class]\t move to start of def
+\\[universal-argument] \\[mys-backward-func-or-class]\t move to start of class
+\\[mys-forward-func-or-class]\t move to end of def
+\\[universal-argument] \\[mys-forward-func-or-class]\t move to end of class
 
 The first two move to one statement beyond the statement that contains
 point.  A numeric prefix argument tells them to move that many
@@ -22842,8 +22867,8 @@ Or do \\[mys-previous-statement] with a huge prefix argument.
 %c:mys-previous-statement
 %c:mys-next-statement
 %c:mys-goto-block-up
-%c:mys-backward-def-or-class
-%c:mys-forward-def-or-class
+%c:mys-backward-func-or-class
+%c:mys-forward-func-or-class
 
 @LITTLE-KNOWN EMACS COMMANDS PARTICULARLY USEFUL IN PYTHON MODE
 
@@ -22898,7 +22923,7 @@ local bindings to mys-newline-and-indent."))
   (when (find-file sourcefile)
     (goto-char (point-min))
     (when
-	(or (re-search-forward (concat mys-def-or-class-re symbol) nil t 1)
+	(or (re-search-forward (concat mys-func-or-class-re symbol) nil t 1)
 	    (progn
 	      ;; maybe a variable definition?
 	      (goto-char (point-min))
@@ -23470,7 +23495,7 @@ Return indentation reached, if dedent done, nil otherwise.
 Affected by `mys-dedent-keep-relative-column'. "
   (interactive "*p")
   (or arg (setq arg 1))
-  (let ((orig (comys-marker (point)))
+  (let ((orig (copy-marker (point)))
         erg)
     (dotimes (_ arg)
       (let* ((cui (current-indentation))
@@ -23500,14 +23525,14 @@ Affected by `mys-dedent-keep-relative-column'. "
 
 Returns position. "
   (interactive "p")
-  (mys-backward-def-or-class))
+  (mys-backward-func-or-class))
 
 (defun mys-forward-function ()
   "Jump to the end of function.
 
 Returns position."
   (interactive "p")
-  (mys-forward-def-or-class))
+  (mys-forward-func-or-class))
 
 (defun mys-function-at-point ()
   "Return functions definition as string. "
@@ -23558,8 +23583,8 @@ Returns position."
      ((mys--beginning-of-class-p)
       (mys-forward-class-bol)
       (mys--match-end-finish cui))
-     ((mys--beginning-of-def-p)
-      (mys-forward-def-bol)
+     ((mys--beginning-of-func-p)
+      (mys-forward-func-bol)
       (mys--match-end-finish cui))
      ((mys--beginning-of-if-block-p)
       (mys-forward-if-block-bol)
@@ -23676,7 +23701,7 @@ Matches lists, but also block, statement, string and comment. "
 (defun pst-here ()
   "Kill previous \"pdb.set_trace()\" and insert it at point. "
   (interactive "*")
-  (let ((orig (comys-marker (point))))
+  (let ((orig (copy-marker (point))))
     (search-backward "pdb.set_trace()")
     (replace-match "")
     (when (mys-empty-line-p)
@@ -23888,7 +23913,7 @@ of the first definition found."
                 (buffer-substring-no-properties (match-beginning cur-paren)
                                                 (match-end cur-paren))))
         (save-match-data
-          (mys-backward-def-or-class))
+          (mys-backward-func-or-class))
         (beginning-of-line)
         (setq cur-indent (current-indentation)))
       ;; HACK: want to go to the next correct definition location.  We
@@ -23955,7 +23980,7 @@ of the first definition found."
             (setq pos (match-beginning 0)
                   name (match-string-no-properties 2)
                   classname (concat "class " name)
-                  thisend (save-match-data (mys--end-of-def-or-class-position))
+                  thisend (save-match-data (mys--end-of-func-or-class-position))
                   sublist '())
             (while (and (re-search-forward "^[ \t]*\\(def\\|class\\)[ \t]+\\(\\sw+\\)" (or thisend end) t 1)(not (nth 8 (parse-partial-sexp (point-min) (point)))))
               (let* ((pos (match-beginning 0))
@@ -24042,13 +24067,13 @@ not be passed explicitly unless you know what you are doing."
     (let* ((pos
 	    (progn
 	      ;; finds a top-level class
-	      (mys-backward-def-or-class)
+	      (mys-backward-func-or-class)
 	      ;; stops behind the indented form at EOL
-	      (mys-forward-def-or-class)
+	      (mys-forward-func-or-class)
 	      ;; may find an inner def-or-class
-	      (mys-backward-def-or-class)))
+	      (mys-backward-func-or-class)))
 	   type
-	   (name (when (and pos (looking-at mys-def-or-class-re))
+	   (name (when (and pos (looking-at mys-func-or-class-re))
 		   (let ((split (split-string (match-string-no-properties 0))))
 		     (setq type (car split))
 		     (cadr split))))
@@ -24113,7 +24138,7 @@ See also `mys-electric-colon-greedy-p'"
    (t
     (insert ":")
     (unless (mys-in-string-or-comment-p)
-      (let ((orig (comys-marker (point)))
+      (let ((orig (copy-marker (point)))
             (indent (mys-compute-indentation)))
         (unless (or (eq (current-indentation) indent)
                     (and mys-electric-colon-greedy-p
@@ -24121,7 +24146,7 @@ See also `mys-electric-colon-greedy-p'"
                              (save-excursion
                                (mys-backward-statement)
                                (current-indentation))))
-                    (and (looking-at mys-def-or-class-re)
+                    (and (looking-at mys-func-or-class-re)
                          (< (current-indentation) indent)))
           (beginning-of-line)
           (delete-horizontal-space)
@@ -24183,7 +24208,7 @@ string or comment."
         (if (called-interactively-p 'any)
             (self-insert-command (prefix-numeric-value arg))
           (insert "#"))
-        (let ((orig (comys-marker (point)))
+        (let ((orig (copy-marker (point)))
               (indent (mys-compute-indentation)))
           (unless (eq (current-indentation) indent)
             (goto-char orig)
@@ -24558,7 +24583,7 @@ JUSTIFY should be used (if applicable) as in `fill-paragraph'."
     (save-excursion
       (let ((pps (parse-partial-sexp (point-min) (point))))
 	(if (nth 1 pps)
-	    (let* ((beg (comys-marker (nth 1 pps)))
+	    (let* ((beg (copy-marker (nth 1 pps)))
 		   (end (and beg (save-excursion (goto-char (nth 1 pps))
 						 (forward-list))))
 		   (paragraph-start "\f\\|[ \t]*$")
@@ -24762,8 +24787,8 @@ See available styles at `mys-fill-paragraph' or var `mys-docstring-style'
 
 See lp:1066489 "
   (interactive "r*")
-  (let ((end (comys-marker end))
-        (last (comys-marker (point)))
+  (let ((end (copy-marker end))
+        (last (copy-marker (point)))
         this-beg)
     (save-excursion
       (save-restriction
@@ -24893,7 +24918,7 @@ See lp:1066489 "
   ;; (goto-char innerbeg)
   (let* ((fill-column (- fill-column (current-indentation)))
 	 (parabeg (max beg (mys--beginning-of-paragraph-position)))
-	 (paraend (comys-marker (mys--end-of-paragraph-position))))
+	 (paraend (copy-marker (mys--end-of-paragraph-position))))
     ;; if paragraph is a substring, take it
     (goto-char parabeg)
     (mys--fill-docstring-first-line parabeg paraend)
@@ -24904,15 +24929,15 @@ See lp:1066489 "
   ;; Delete spaces after/before string fencge
   (mys--string-fence-delete-spaces beg)
   (let* ((beg (or beg docstring))
-	 (innerbeg (comys-marker (progn (goto-char beg) (mys--skip-raw-string-front-fence) (point))))
-         (end (comys-marker
+	 (innerbeg (copy-marker (progn (goto-char beg) (mys--skip-raw-string-front-fence) (point))))
+         (end (copy-marker
 	       (or end
                    (progn
 		     (goto-char innerbeg)
 		     ;; (mys--skip-raw-string-front-fence)
 		     (skip-syntax-forward "^|")
 		     (1+ (point))))))
-	 (innerend (comys-marker (progn (goto-char end)(skip-chars-backward "\\'\"") (point))))
+	 (innerend (copy-marker (progn (goto-char end)(skip-chars-backward "\\'\"") (point))))
 	 (multi-line-p (string-match "\n" (buffer-substring-no-properties innerbeg innerend))))
     (save-restriction
       (narrow-to-region (point-min) end)
@@ -24937,7 +24962,7 @@ Fill according to `mys-docstring-style' "
 	  ;; set inside tqs
 	  ;; (save-excursion (and (nth 3 pps) (goto-char (nth 8 pps)) (current-indentation)))
 	  nil)
-	 (orig (comys-marker (point)))
+	 (orig (copy-marker (point)))
 	 ;; (docstring (or docstring (mys--in-or-behind-or-before-a-docstring pps)))
 	 (docstring (cond (docstring
 			   (if (not (number-or-marker-p docstring))
@@ -24946,7 +24971,7 @@ Fill according to `mys-docstring-style' "
 			  (t (mys--in-or-behind-or-before-a-docstring pps))))
 	 (beg (and (nth 3 pps) (nth 8 pps)))
 	 (tqs (progn (and beg (goto-char beg) (looking-at "\"\"\"\\|'''") (setq indent (current-column)))))
-	 (end (comys-marker (if tqs
+	 (end (copy-marker (if tqs
 			       (or
 				(progn (ignore-errors (forward-sexp))(and (< orig (point)) (point)))
 				(goto-char orig)
@@ -24962,7 +24987,7 @@ Fill according to `mys-docstring-style' "
 	  (if (not tqs)
 	      (if (mys-preceding-line-backslashed-p)
 		  (progn
-		    (setq end (comys-marker (line-end-position)))
+		    (setq end (copy-marker (line-end-position)))
 		    (narrow-to-region (line-beginning-position) end)
 		    (fill-region (line-beginning-position) end justify t)
 		    (when (< 1 (mys-count-lines))
@@ -25167,14 +25192,14 @@ the default"
     (let ((comment-start (if mys-block-comment-prefix-p
                              mys-block-comment-prefix
                            comment-start))
-          (beg (or beg (mys--beginning-of-def-position)))
-          (end (or end (mys--end-of-def-position))))
+          (beg (or beg (mys--beginning-of-func-position)))
+          (end (or end (mys--end-of-func-position))))
       (goto-char beg)
       (push-mark)
       (goto-char end)
       (comment-region beg end arg))))
 
-(defun mys-comment-def-or-class (&optional beg end arg)
+(defun mys-comment-func-or-class (&optional beg end arg)
   "Comments def-or-class at point.
 
 Uses double hash (`#’) comment starter when `mys-block-comment-prefix-p' is  t,
@@ -25184,8 +25209,8 @@ the default"
     (let ((comment-start (if mys-block-comment-prefix-p
                              mys-block-comment-prefix
                            comment-start))
-          (beg (or beg (mys--beginning-of-def-or-class-position)))
-          (end (or end (mys--end-of-def-or-class-position))))
+          (beg (or beg (mys--beginning-of-func-or-class-position)))
+          (end (or end (mys--end-of-func-or-class-position))))
       (goto-char beg)
       (push-mark)
       (goto-char end)
@@ -25349,7 +25374,7 @@ Optional File: execute through running a temp-file"
   (interactive)
   (mys--execute-prepare 'clause shell dedicated switch beg end file t))
 
-(defun mys-execute-def-fast (&optional shell dedicated switch beg end file)
+(defun mys-execute-func-fast (&optional shell dedicated switch beg end file)
   "Process def at point by a Python interpreter.
 
 Output buffer not in comint-mode, displays \"Fast\"  by default
@@ -25360,7 +25385,7 @@ Optional File: execute through running a temp-file"
   (interactive)
   (mys--execute-prepare 'def shell dedicated switch beg end file t))
 
-(defun mys-execute-def-or-class-fast (&optional shell dedicated switch beg end file)
+(defun mys-execute-func-or-class-fast (&optional shell dedicated switch beg end file)
   "Process def-or-class at point by a Python interpreter.
 
 Output buffer not in comint-mode, displays \"Fast\"  by default
@@ -25448,12 +25473,12 @@ Optional File: execute through running a temp-file"
   (interactive)
   (mys--narrow-prepare "clause"))
 
-(defun mys-narrow-to-def ()
+(defun mys-narrow-to-func ()
   "Narrow to def at point."
   (interactive)
-  (mys--narrow-prepare "def"))
+  (mys--narrow-prepare "func"))
 
-(defun mys-narrow-to-def-or-class ()
+(defun mys-narrow-to-func-or-class ()
   "Narrow to def-or-class at point."
   (interactive)
   (mys--narrow-prepare "def-or-class"))
@@ -25564,7 +25589,7 @@ Optional File: execute through running a temp-file"
   (interactive)
   (mys-hide-base 'def))
 
-(defun mys-hide-def-or-class ()
+(defun mys-hide-func-or-class ()
   "Hide def-or-class at point."
   (interactive)
   (mys-hide-base 'def-or-class))
@@ -25801,7 +25826,7 @@ VARIABLES
 	(t (font-lock-add-keywords 'mys-mode
 				   '(("\\<print\\>" . 'font-lock-keyword-face)
 				     ("\\<file\\>" . 'mys-builtins-face)))))
-  (set (make-local-variable 'which-func-functions) 'mys-which-def-or-class)
+  (set (make-local-variable 'which-func-functions) 'mys-which-func-or-class)
   (set (make-local-variable 'parse-sexp-lookup-properties) t)
   (set (make-local-variable 'comment-use-syntax) t)
   (set (make-local-variable 'comment-start) "#")
@@ -25889,10 +25914,10 @@ VARIABLES
         (set (make-local-variable 'end-of-defun-function) 'mys-forward-top-level)
         (define-key mys-mode-map [(control meta a)] 'mys-backward-top-level)
         (define-key mys-mode-map [(control meta e)] 'mys-forward-top-level))
-    (set (make-local-variable 'beginning-of-defun-function) 'mys-backward-def-or-class)
-    (set (make-local-variable 'end-of-defun-function) 'mys-forward-def-or-class)
-    (define-key mys-mode-map [(control meta a)] 'mys-backward-def-or-class)
-    (define-key mys-mode-map [(control meta e)] 'mys-forward-def-or-class))
+    (set (make-local-variable 'beginning-of-defun-function) 'mys-backward-func-or-class)
+    (set (make-local-variable 'end-of-defun-function) 'mys-forward-func-or-class)
+    (define-key mys-mode-map [(control meta a)] 'mys-backward-func-or-class)
+    (define-key mys-mode-map [(control meta e)] 'mys-forward-func-or-class))
   (when mys-sexp-use-expression-p
     (define-key mys-mode-map [(control meta f)] 'mys-forward-expression)
     (define-key mys-mode-map [(control meta b)] 'mys-backward-expression))
