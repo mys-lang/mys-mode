@@ -17195,13 +17195,13 @@ sign in chained assignment."
                   "any" "apply" "basestring" "bin" "bool" "buffer" "bytearray"
                   "bytes" "callable" "chr" "classmethod" "cmp" "coerce" "compile"
                   "complex" "delattr" "dict" "dir" "divmod" "enumerate" "eval"
-                  "execfile" "filter" "float" "format" "frozenset"
+                  "execfile" "filter" "f32" "f64" "format" "frozenset"
                   "getattr" "globals" "hasattr" "hash" "help" "hex" "id" "input"
-                  "int" "intern" "isinstance" "issubclass" "iter" "len" "list"
+                  "i8" "i16" "i32" "i64" "u8" "u16" "u32" "u64" "intern" "isinstance" "issubclass" "iter" "len" "list"
                   "locals" "long" "map" "max" "min" "next" "object" "oct" "open"
                   "ord" "pow" "property" "range" "raw_input" "reduce"
                   "reload" "repr" "reversed" "round" "set" "setattr" "slice"
-                  "sorted" "staticmethod" "str" "sum" "super" "tuple" "type"
+                  "sorted" "staticmethod" "str" "string" "sum" "super" "tuple" "type"
                   "unichr" "unicode" "vars" "xrange" "zip")) symbol-end) . (1 mys-builtins-face))
     ;; #104, GNU bug 44568 font lock of assignments with type hints
     ;; ("\\([._[:word:]]+\\)\\(?:\\[[^]]+]\\)?[[:space:]]*\\(?:\\(?:\\*\\*\\|//\\|<<\\|>>\\|[%&*+/|^-]\\)?=\\)"
@@ -25986,46 +25986,8 @@ may want to re-add custom functions to it using the
 ;; (push "*Imys*"  same-window-buffer-names)
 
 ;; Python Macro File
-(unless (member '("\\.py\\'" . mys-mode) auto-mode-alist)
-  (push (cons "\\.py\\'"  'mys-mode)  auto-mode-alist))
-
-(unless (member '("\\.pym\\'" . mys-mode) auto-mode-alist)
-  (push (cons "\\.pym\\'"  'mys-mode)  auto-mode-alist))
-
-(unless (member '("\\.pyc\\'" . mys-mode)  auto-mode-alist)
-  (push (cons "\\.pyc\\'"  'mys-mode)  auto-mode-alist))
-
-;; Pyrex Source
-(unless (member '("\\.pyx\\'" . mys-mode)  auto-mode-alist)
-  (push (cons "\\.pyx\\'"  'mys-mode) auto-mode-alist))
-
-;; Python Optimized Code
-(unless (member '("\\.pyo\\'" . mys-mode)  auto-mode-alist)
-  (push (cons "\\.pyo\\'"  'mys-mode) auto-mode-alist))
-
-;; Pyrex Definition File
-(unless (member '("\\.pxd\\'" . mys-mode)  auto-mode-alist)
-  (push (cons "\\.pxd\\'"  'mys-mode) auto-mode-alist))
-
-;; Python Repository
-(unless (member '("\\.pyr\\'" . mys-mode)  auto-mode-alist)
-  (push (cons "\\.pyr\\'"  'mys-mode)  auto-mode-alist))
-
-;; Python Stub file
-;; https://www.python.org/dev/peps/pep-0484/#stub-files
-(unless (member '("\\.pyi\\'" . mys-mode)  auto-mode-alist)
-  (push (cons "\\.pyi\\'"  'mys-mode)  auto-mode-alist))
-
-;; Python Path Configuration
-(unless (member '("\\.pth\\'" . mys-mode)  auto-mode-alist)
-  (push (cons "\\.pth\\'"  'mys-mode)  auto-mode-alist))
-
-;; Python Wheels
-(unless (member '("\\.whl\\'" . mys-mode)  auto-mode-alist)
-  (push (cons "\\.whl\\'"  'mys-mode)  auto-mode-alist))
-
-(unless (member '("!#[          ]*/.*[jp]ython[0-9.]*" . mys-mode) magic-mode-alist)
-  (push '("!#[ \\t]*/.*[jp]ython[0-9.]*" . mys-mode) magic-mode-alist))
+(unless (member '("\\.mys\\'" . mys-mode) auto-mode-alist)
+  (push (cons "\\.mys\\'"  'mys-mode)  auto-mode-alist))
 
 ;;  lp:1355458, what about using `magic-mode-alist'?
 
